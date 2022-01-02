@@ -1,39 +1,42 @@
-import React, { useEffect, useState, useCallback } from 'react';
-import { StyleSheet, Platform, ScrollView, RefreshControl, } from 'react-native';
-import { View, Text } from '../components/Themed';
-import {
-    RecommendationAlert,
-    DaySlotBar
-} from '../components/Schedule';
+import React, { useState } from 'react';
+import { StyleSheet, Platform, } from 'react-native';
+import { View } from '../components/Themed';
 
-import { MaterialCommunityIcons, Ionicons } from '@expo/vector-icons';
 import useColorScheme from '../hooks/useColorScheme';
 
 import {
     Heading,
     Container,
-    VStack,
     useMediaQuery,
     useTheme,
-    Skeleton,
     Center,
     Box,
-    FormControl,
-    Input,
-    Link,
     Button,
-    Icon,
-    IconButton,
-    HStack,
-    Divider,
-    Spinner,
 } from 'native-base';
 
-import axios from 'axios';
 import * as Google from 'expo-google-app-auth';
-import * as AppAuth from 'expo-app-auth';
+import Toast from 'react-native-toast-message';
+import StyledFirebaseAuth from 'react-firebaseui/StyledFirebaseAuth';
+import firebase from 'firebase/compat/app';
+import 'firebase/compat/auth';
 
-import { getAuth, onAuthStateChanged, signInWithCredential, GoogleAuthProvider } from "firebase/auth";
+import { getAuth, signInWithCredential, GoogleAuthProvider } from "firebase/auth";
+
+if (Platform.OS === 'web') {
+    const firebaseConfig = {
+        apiKey: "YOUR_GOOGLE_API_KEY",
+        authDomain: "your-firebase-project.firebaseapp.com",
+        databaseURL: "https://your-firebase-project-default-rtdb.firebaseio.com",
+        projectId: "your-firebase-project",
+        storageBucket: "your-firebase-project.appspot.com",
+        messagingSenderId: "YOUR_FIREBASE_SENDER_ID",
+        appId: "YOUR_FIREBASE_APP_ID",
+        measurementId: "G-XXXXXXXXXX"
+    };
+
+    // Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
+}
 
 const auth = getAuth();
 
@@ -62,7 +65,7 @@ export default function SignInScreen(props: any) {
             console.log(credential);
             try {
                 await signInWithCredential(auth, credential)
-            } catch (error:any) {
+            } catch (error: any) {
                 // Handle Errors here.
                 const errorCode = error.code;
                 const errorMessage = error.message;
@@ -71,8 +74,18 @@ export default function SignInScreen(props: any) {
                 alert('Something went wrong while authenticating with Google.');
             }
         } else {
-            alert('Something went wrong. Please try again.')
+            Toast.show({
+                type: 'error',
+                text1: 'Something went wrong.'
+            });
         }
+    }
+
+    const uiconfig = {
+        signInFlow: 'popup',
+        signInOptions: [
+            firebase.auth.GoogleAuthProvider.PROVIDER_ID,
+        ]
     }
 
     let body;
@@ -94,7 +107,11 @@ export default function SignInScreen(props: any) {
                     <Heading color="muted.400" size="xs">
                         Please sign in with your UM Google Account to continue.
                     </Heading>
-                    <Button onPress={onLoginPress}>Login</Button>
+                    {Platform.OS === "web" ? (
+                        <StyledFirebaseAuth uiConfig={uiconfig} firebaseAuth={firebase.auth()} />
+                    ) : (
+                        <Button onPress={onLoginPress}>Login</Button>
+                    )}
                 </Box>
             </Center>
         </>

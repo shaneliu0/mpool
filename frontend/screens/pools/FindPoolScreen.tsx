@@ -17,14 +17,16 @@ import {
   Center
 } from 'native-base';
 
-import { View as ThemedView } from '../../components/Themed';
 import useColorScheme from '../../hooks/useColorScheme';
 
 import DateTimePicker from '@react-native-community/datetimepicker';
 import SkeletonContent from 'react-native-skeleton-content';
+import { GooglePlacesAutocomplete } from 'react-native-google-places-autocomplete';
+import Toast from 'react-native-toast-message';
 
 import { Text, View } from '../../components/Themed';
 import { RootTabScreenProps, PoolSearchQuery, Pool } from '../../types';
+import axios from 'axios';
 
 import { MaterialIcons } from '@expo/vector-icons';
 import { selectUser } from '../../slices/authSlice';
@@ -236,11 +238,31 @@ export default function FindPoolScreen({ navigation }: RootTabScreenProps<'PoolR
     }
   }, [loadingPools, searchQuery]);
 
+  const onSubmit = async (query: PoolSearchQuery) => {
+    try {
+      const { data } = await axios.get('/pools/search', {
+        params: {
+          time: query.time,
+          startPoint: query.startPoint,
+          endPoint: query.endPoint
+        }
+      });
+
+      setSearchQuery(data);
+    } catch (error) {
+      console.error(error);
+      Toast.show({
+        type: 'error',
+        text1: 'Something went wrong.'
+      });
+    }
+  }
+
   if (searchQuery === null) {
     return (
       <View style={styles.container}>
         <PoolSearch
-          onSubmit={setSearchQuery}
+          onSubmit={onSubmit}
         />
       </View>
     );
@@ -277,7 +299,7 @@ function PoolDisplayBar(props: { key: number, pool?: Pool, action: () => void, l
             <View
               style={styles.sideMargins}
             >
-              <ThemedView style={styles.separator} lightColor="#eee" darkColor="rgba(255,255,255,0.1)" />
+              <View style={styles.separator} lightColor="#eee" darkColor="rgba(255,255,255,0.1)" />
               <Row alignItems="center">
                 <Box>
                   <Text style={styles.scheduleText}>{text1}</Text>
@@ -288,7 +310,7 @@ function PoolDisplayBar(props: { key: number, pool?: Pool, action: () => void, l
                   <MaterialIcons name="keyboard-arrow-right" size={24} color={isDarkTheme ? "#ffffff" : "#000000"} />
                 </Box>
               </Row>
-              <ThemedView style={styles.separator} lightColor="#eee" darkColor="rgba(255,255,255,0.1)" />
+              <View style={styles.separator} lightColor="#eee" darkColor="rgba(255,255,255,0.1)" />
             </View>
           </TouchableOpacity>
         </>

@@ -13,6 +13,7 @@ import axios from 'axios';
 import { Provider as ReduxProvider } from 'react-redux';
 import { useDispatch } from 'react-redux';
 import store from './store';
+import Toast from 'react-native-toast-message';
 
 import useCachedResources from './hooks/useCachedResources';
 import useColorScheme from './hooks/useColorScheme';
@@ -29,7 +30,6 @@ import {
 import { useEffect, useState, useCallback } from 'react';
 
 // configurate axios
-// axios.defaults.baseURL = 'http://localhost:3001';
 axios.defaults.baseURL = 'http://localhost:3001'
 
 const selectColorMode = (scheme: 'light' | 'dark') => (light: string, dark: string) => scheme === 'light' ? light : dark;
@@ -80,6 +80,7 @@ function App() {
         <SafeAreaProvider>
           <Navigation colorScheme={colorScheme} />
           <StatusBar />
+          <Toast />
         </SafeAreaProvider>
       </NativeBaseProvider>
     );

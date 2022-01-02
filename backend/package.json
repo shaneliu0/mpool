@@ -4,13 +4,14 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "cd lib && nodemon index.js",
+    "start": "cd src && nodemon index.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
     "cors": "^2.8.5",
+    "expo-server-sdk": "^3.6.0",
     "express": "^4.17.1",
     "firebase-admin": "^10.0.0",
     "moment": "^2.29.1",

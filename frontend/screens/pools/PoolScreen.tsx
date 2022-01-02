@@ -15,6 +15,7 @@ import {
 import useColorScheme from '../../hooks/useColorScheme';
 
 import SkeletonContent from 'react-native-skeleton-content';
+import Toast from 'react-native-toast-message';
 
 import { Text, View } from '../../components/Themed';
 import { RootTabScreenProps, PoolDetails } from '../../types';
@@ -108,7 +109,10 @@ function HandleJoinPoolButton(props: HandleJoinPoolButtonProps) {
       // const { data } = await axios.post(`/pools/:poolId/join`)
     } catch (error) {
       console.log(error);
-      alert('Something went wrong. Please try again.');
+      Toast.show({
+        type: 'error',
+        text1: 'Something went wrong.'
+      });
     }
     setLoading(false);
   }

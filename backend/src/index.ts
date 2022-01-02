@@ -25,7 +25,6 @@ global.pool = pool;
 import poolRouter from './routes/pool';
 import chatRouter from './routes/chat';
 
-
 const app = express();
 
 async function decodeUserToken(req: any, res: any, next: any) {

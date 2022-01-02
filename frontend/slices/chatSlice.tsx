@@ -4,7 +4,6 @@ export const authSlice = createSlice({
     name: 'chat',
     initialState: {
         status: 'idle',
-        messages: [],
         conversations: [],
     },
     reducers: {

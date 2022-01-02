@@ -32,11 +32,19 @@ async function retrieveUsersFromChatId(chatId: number) {
     return users;
 }
 
-async function pushRealTimeUpdate(userId: string, type: string, data: any) {
+async function pushRealTimeUpdate(userId: string, type: string, chatId: string, data: any) {
     // using firebase realtime database:
     // db -> type -> userId -> data
-    const ref = db.ref(`/${type}/${userId}`);
+    const ref = db.ref(`${userId}/${type}/${chatId}`);
     await ref.set(data);
+}
+
+// truncate a message to a certain length and add ellipsis
+function truncateMessage(message: string, length: number) {
+    if (message && message.length > length) {
+        return message.substring(0, length) + '...';
+    }
+    return message;
 }
 
 // get the chats that the user has available to them, including the most recent sent message.
@@ -57,7 +65,7 @@ router.get('/', async (req, res) => {
             return retrieveMostRecentMessageFromChat(chat.chat_id);
         }));
         const linedUpChatPhotoURLs = await Promise.all(availableChats.map(async (chat) => {
-            const users = await retrieveUsersFromChatId(chat.chat_id);
+            const users = (await retrieveUsersFromChatId(chat.chat_id)).filter((u) => u.uid !== user.uid);
             return users.map((user: UserRecord) => user.photoURL);
         }));
 
@@ -65,7 +73,7 @@ router.get('/', async (req, res) => {
             return {
                 id: chat.chat_id,
                 name: chat.name,
-                lastMessage: linedUpRecentMessage[idx]?.text,
+                lastMessage: truncateMessage(linedUpRecentMessage[idx]?.text, 24),
                 lastMessageTime: linedUpRecentMessage[idx]?.created_at && moment(linedUpRecentMessage[idx].created_at).calendar(),
                 avatars: linedUpChatPhotoURLs[idx]
             }
@@ -89,12 +97,13 @@ router.get('/:chatId', async (req, res) => {
 
     try {
         // verify that the user belongs to the requested chat
-        const { rows: verifyInChat } = await pool.query(`SELECT * from chat_user WHERE user_id = $1`, [user.uid]);
+        const { rows: verifyInChat } = await pool.query(`SELECT 1 from chat_user WHERE user_id = $1 AND chat_id = $2`, [user.uid, chatId]);
         if (verifyInChat.length === 0) {
             return res.status(403).send('User isn\'t in the chat. Forbidden.');
         }
         const { rows: messages } = await pool.query(`SELECT * from message 
                                                     WHERE chat_id = $1
+                                                    ORDER BY created_at DESC
                                                     LIMIT 20
                                                     OFFSET $2`, [chatId, offset ?? 0]);
 
@@ -118,7 +127,7 @@ router.get('/:chatId', async (req, res) => {
                     _id: foundUser?.uid,
                     name: foundUser?.displayName,
                     avatar: foundUser?.photoURL
-                }
+                },
             }
         }));
     } catch (e) {
@@ -136,7 +145,7 @@ router.post('/:chat_id', async (req, res) => {
 
     try {
         // verify that the user belongs to the requested chat
-        const { rows: verifyInChat } = await pool.query(`SELECT * from chat_user WHERE user_id = $1`, [chat_id]);
+        const { rows: verifyInChat } = await pool.query(`SELECT 1 from chat_user WHERE user_id = $1 AND chat_id = $2`, [user.uid, chat_id]);
         if (verifyInChat.length === 0) {
             return res.status(403).send('User isn\'t in the chat. Forbidden.');
         }
@@ -152,12 +161,11 @@ router.post('/:chat_id', async (req, res) => {
         const { rows: chatUsers } = await pool.query(`SELECT * from chat_user
                                                         WHERE chat_id = $1`, [chat_id]);
         // remove the sender's id from the realtime update recipients
-        const recipientList = chatUsers.filter(e => e.user_id !== user.uid);
-        recipientList.forEach(({ user_id }) => {
-            pushRealTimeUpdate(user_id, 'message', {
+        chatUsers.forEach(({ user_id }) => {
+            pushRealTimeUpdate(user_id, 'message', chat_id, {
                 _id: sendResp[0].message_id,
                 text,
-                createdAt: sendResp[0].created_at,
+                createdAt: sendResp[0].created_at.toISOString(),
                 user: {
                     _id: user.uid,
                     name: userRecord.displayName,

@@ -1,58 +1,115 @@
 import * as React from 'react';
 import { useState, useEffect } from 'react';
 
-import { ScrollView, StyleSheet, Button, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { StyleSheet, ActivityIndicator } from 'react-native';
 
 import {
-  Heading,
-  HStack,
-  useMediaQuery,
-  useTheme,
-  Skeleton,
-  Select,
-  CheckIcon,
-  Box,
-  Input,
-  Row,
-  Center
+  Heading
 } from 'native-base';
 
-import { View as ThemedView } from '../../components/Themed';
-import useColorScheme from '../../hooks/useColorScheme';
 
-import DateTimePicker from '@react-native-community/datetimepicker';
-import SkeletonContent from 'react-native-skeleton-content';
+import { getDatabase, ref, onValue } from "firebase/database";
 
-import { Text, View } from '../../components/Themed';
-import { RootTabScreenProps, PoolSearchQuery, Pool, AvailableChat } from '../../types';
+import { View } from '../../components/Themed';
+import { RootTabScreenProps } from '../../types';
 import { GiftedChat, IMessage } from 'react-native-gifted-chat';
+import Toast from 'react-native-toast-message';
+import { useSelector } from 'react-redux';
+import {
+  selectUser
+} from '../../slices/authSlice';
 
-import { MaterialIcons } from '@expo/vector-icons';
 import axios from 'axios';
+
+const db = getDatabase();
 
 export default function Chats({ route, navigation }: RootTabScreenProps<'ChatRoot'>) {
   const [chats, setChats] = useState<IMessage[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingEarlier, setLoadingEarlier] = useState(false);
+  const [hasEarlier, setHasEarlier] = useState(true);
+  const user = useSelector(selectUser);
 
+  let mUnsub: () => void;
   useEffect(() => {
-    (async () => {
-      // wait for 0.5 seconds
-      await new Promise(resolve => setTimeout(resolve, 500));
+    mUnsub && mUnsub();
+    if (loading) {
+      (async () => {
+        try {
+          const { data } = await axios.get(`/chat/${chatId}`);
+          setChats(data);
+          setLoading(false);
+        } catch (error) {
+          Toast.show({
+            type: 'error',
+            text1: 'Something went wrong.'
+          })
+        }
+      })();
+    } else {
+      const chatListenRef = ref(db, `${user.uid}/message/${chatId}`);
+      mUnsub = onValue(chatListenRef, snap => {
+        const data = snap.val();
+        if (!data) return;
+        setChats((previousMessages: IMessage[]) => {
+          if (previousMessages.find(m => m._id === data._id)) {
+            return previousMessages;
+          }
+          if (previousMessages.some(m => m.pending)) {
+            const pending = previousMessages.find(m => m.pending);
+            if (!pending || pending.text != data.text) return GiftedChat.append(previousMessages, [data]);
+            pending.sent = true;
+            return previousMessages;
+          }
+          return GiftedChat.append(previousMessages, [data]);
+        });
+      });
+    }
 
-      setChats(new Array(6).fill(0).map((e, idx) => ({
-        _id: idx,
-        text: 'Hello developer',
-        createdAt: new Date(),
-        user: {
-          _id: 2,
-          name: 'GiftedChat',
-          avatar: 'https://placeimg.com/140/140/any',
-        },
-      })));
+    return () => {
+      mUnsub && mUnsub();
+    }
+  }, [loading]);
 
-      setLoading(false);
-    })();
-  }, [])
+  const handleMessageSend = async (messages: IMessage[]) => {
+    messages.forEach(m => m.pending = true);
+    const previousMessages = chats.slice();
+    setChats(previousMessages => GiftedChat.append(previousMessages, messages));
+    try {
+      let mResp = await (await Promise.all(messages.map(m => {
+        return axios.post(`/chat/${chatId}`, {
+          text: m.text
+        });
+      }))).map(r => r.data);
+      mResp = mResp.filter(m => !previousMessages.find(p => p._id === m._id));
+      mResp.forEach(m => m.pending = false);
+      mResp.forEach(m => m.sent = true);
+      setChats(GiftedChat.append(previousMessages, mResp));
+    } catch (error) {
+      console.error(error);
+      Toast.show({
+        type: 'error',
+        text1: 'Couldn\'t send message.'
+      })
+    }
+  }
+
+  const handleLoadEarlier = async () => {
+    setLoadingEarlier(true);
+    try {
+      // retrieve more messages, with an offset equal to messages.length
+      const { data } = await axios.get(`/chat/${chatId}?offset=${chats.length}`);
+      if (data && data.length === 0) return setHasEarlier(false);
+      setChats(GiftedChat.prepend(chats, data));
+    } catch (error) {
+      console.error(error);
+      Toast.show({
+        type: 'error',
+        text1: 'Something went wrong. Couldn\'t load more messages.'
+      })
+    }
+    setLoadingEarlier(false);
+  }
 
   if (!route.params) return <Heading>Couldn't find the requested chat.</Heading>
   const { chatId } = route.params;
@@ -62,12 +119,15 @@ export default function Chats({ route, navigation }: RootTabScreenProps<'ChatRoo
       {loading && <ActivityIndicator size="large" style={{ margin: 35 }} />}
       <GiftedChat
         messages={chats}
-        onSend={messages => {
-          setChats(previousMessages => GiftedChat.append(previousMessages, messages));
-        }}
+        onSend={handleMessageSend}
         user={{
-          _id: 1,
+          _id: user?.uid,
         }}
+        loadEarlier={hasEarlier && !loading}
+        onLoadEarlier={handleLoadEarlier}
+        isLoadingEarlier={loadingEarlier}
+        infiniteScroll={true}
+        renderUsernameOnMessage={true}
       />
     </View>
   )
