@@ -32,22 +32,22 @@ router.get('/search', async (req, res) => {
         SELECT * FROM place ORDER BY coordinates <-> point '${currentStartPlace.coordinates}' LIMIT 12) as closest
         ON closest.place_id = pool.start_place_id`);
 
-        const unique = [];
-	for (var i = 0; i < nearbyPlaces.length; i++) {
-  	//looping through unique to check if element is already present
-  		var inUnique = false;
-  		console.log(nearbyPlaces[i]);
-  		for (var j = 0; j < unique.length; j++) {
-    			if (nearbyPlaces[i].pool_id === unique[j].pool_id) {
-      				inUnique = true;
-      				break;
-    			}
-  		}
-  		if (!inUnique) {
-    			unique.push(nearbyPlaces[i]);
-  		}
-	}
-        nearbyPlaces.sort((a, b) => {
+        /**The following code ensures that no duplicates exist.
+        */
+        var unique = [];
+        for (var i = 0; i < nearbyPlaces.length; i++) {
+            var inUnique = false;
+            for (var j = 0; j < unique.length; j++) {
+                    if (nearbyPlaces[i].pool_id === unique[j].pool_id) {
+                        inUnique = true;
+                        break;
+                    }
+            }
+            if (!inUnique) {
+                    unique.push(nearbyPlaces[i]);
+            }
+        }
+        unique.sort((a, b) => {
             const [aLat, aLng] = parseCoordinates(a.coordinates);
             const [bLat, bLng] = parseCoordinates(b.coordinates);
 
@@ -59,7 +59,7 @@ router.get('/search', async (req, res) => {
         // query again for pools
 
         
-        return res.status(200).json(nearbyPlaces);
+        return res.status(200).json(unique);
     } catch (error) {
         console.error(error);
         return res.status(500).send('Something went wrong.')
@@ -69,6 +69,26 @@ router.get('/search', async (req, res) => {
 router.post('/', async (req, res) => {
 
 });
+
+/** Function to put a user into the pool that they selected.
+ *  @param No parameters
+ *  @returns the poolID
+ */
+function putUserInPool() {
+    var thisPoolID;
+
+    /** This code was written under certain assumptions about
+     * the attributes of REQ.
+     */
+    router.post('/:poolId/join', async (req, res) => 
+    {   
+        thisPoolID = req.params.poolId;
+        await pool.query(`INSERT INTO chat_user VALUES (${thisPoolID}, '${req.user.uid}')`);
+        
+    });
+
+    return thisPoolID;
+}
 
 function parseCoordinates(coords:string): number[] {
     const [lat, lng] = coords.split(',');
