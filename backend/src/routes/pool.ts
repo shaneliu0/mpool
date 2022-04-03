@@ -48,9 +48,32 @@ router.get('/search', async (req, res) => {
             const { x: aLat, y: aLng } = a.coordinates;
             const { x: bLat, y: bLng } = b.coordinates;
 
-            const dist = Math.hypot(aLat - bLat, aLng - bLng);
 
-            return dist + 0.5 * Math.abs(a.time.getTime() - b.time.getTime());
+        /**The following code ensures that no duplicates exist.
+        */
+        var unique = [];
+        for (var i = 0; i < nearbyPlaces.length; i++) {
+            var inUnique = false;
+            for (var j = 0; j < unique.length; j++) {
+                    if (nearbyPlaces[i].pool_id === unique[j].pool_id) {
+                        inUnique = true;
+                        break;
+                    }
+            }
+            if (!inUnique) {
+                    unique.push(nearbyPlaces[i]);
+            }
+        }
+
+        unique.sort((a, b) => {
+            const [aLat, aLng] = parseCoordinates(a.coordinates);
+            const [bLat, bLng] = parseCoordinates(b.coordinates);
+            const [currLat, currLong] = parseCoordinates(currentStartPlace.coordinates); 
+            
+            const distA = Math.sqrt(Math.pow(aLat - currLat, 2) + Math.pow(aLng - currLong, 2)); 
+            const distB = Math.sqrt(Math.pow(bLat - currLat, 2) + Math.pow(bLng - currLong, 2)); 
+            //previous heuristic: + 0.5 * Math.abs(a.time.getTime() - b.time.getTime());
+            return distA - distB;
         });
 
         // query again for pools. 
@@ -71,6 +94,20 @@ router.get('/search', async (req, res) => {
 router.post('/', async (req, res) => {
 
 });
+
+
+/** Function to put a user into the pool that they selected.
+ *  @param No parameters
+ *  @returns Nothing
+ */
+router.post('/:poolId/join', async (req, res) => 
+    {   
+        await pool.query(`INSERT INTO chat_user VALUES (${req.params.poolId}, '${req.user.uid}')`);
+        return res.json({status: "OK"});
+    });
+
+
+
 
 function parseCoordinates(coords:string): number[] {
     const [lat, lng] = coords.split(',');
