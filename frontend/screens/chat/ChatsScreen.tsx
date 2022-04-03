@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { useState, useEffect } from 'react';
 
-import { ScrollView, StyleSheet, TouchableOpacity, Image, RefreshControl } from 'react-native';
+import { ScrollView, StyleSheet, TouchableOpacity, Image, RefreshControl, Animated } from 'react-native';
 
 import {
   Heading,
@@ -27,6 +27,21 @@ interface ChatContainerProps {
 function ChatContainer(props: ChatContainerProps) {
   const { chat, onPress, loading } = props;
   const { id, name, lastMessage, lastMessageTime, avatars } = chat;
+  const fadeAnim = React.useRef(new Animated.Value(0)).current;
+
+  const fadeIn = () => {
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 350,
+      useNativeDriver: true
+    }).start()
+  }
+
+  useEffect(() => {
+    if (!loading) {
+      fadeIn();
+    }
+  })
 
   const profilePicture = avatars && avatars[0];
 
@@ -41,7 +56,7 @@ function ChatContainer(props: ChatContainerProps) {
   }
 
   return (
-    <TouchableOpacity onPress={onPress} style={{ marginLeft: 0, marginRight: "auto" }}>
+    <TouchableOpacity onPress={onPress} style={{ marginLeft: 25, marginRight: "auto" }}>
       <View style={{
         flex: 1,
         justifyContent: 'center',
@@ -87,17 +102,25 @@ function ChatContainer(props: ChatContainerProps) {
           ]}
           isLoading={loading}
         >
-          <View style={{ width: 175, marginRight: 20 }}>
-            <Avatar.Group size="lg" max={2}>
-              {renderAvatars()}
-            </Avatar.Group>
-          </View>
-          <View style={[styles.nested, { marginRight: 0, marginLeft: 0 }]}>
-            <Text style={[styles.normalText, styles.boldText]}>{name}</Text>
-            <Text style={[styles.normalText, { marginTop: 5 }]}>{lastMessage}</Text>
-            <Text style={[styles.normalText, styles.lightText]}>{lastMessageTime}</Text>
-          </View>
-          <Entypo name="chevron-right" size={24} color="black" />
+          <Animated.View
+            style={{
+              opacity: fadeAnim,
+              width: "100%",
+              flexDirection: 'row'
+            }}
+          >
+            <View style={{ width: 100, marginRight: 20 }}>
+              <Avatar.Group size="lg" max={2}>
+                {renderAvatars()}
+              </Avatar.Group>
+            </View>
+            <View style={[styles.nested, { marginRight: 0, marginLeft: 0 }]}>
+              <Text style={[styles.normalText, styles.boldText]}>{name}</Text>
+              <Text style={[styles.normalText, { marginTop: 5 }]}>{lastMessage}</Text>
+              <Text style={[styles.normalText, styles.lightText]}>{lastMessageTime}</Text>
+            </View>
+            <Entypo name="chevron-right" size={24} color="black" />
+          </Animated.View>
         </SkeletonContent>
       </View>
     </TouchableOpacity>

@@ -6,7 +6,7 @@ import { StatusBar } from 'expo-status-bar';
 import React from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import * as SplashScreen from 'expo-splash-screen';
-import { View, Text, Image } from 'react-native';
+import { View, Text, Image, LogBox } from 'react-native';
 
 import axios from 'axios';
 
@@ -30,7 +30,9 @@ import {
 import { useEffect, useState, useCallback } from 'react';
 
 // configurate axios
-axios.defaults.baseURL = 'http://localhost:3001'
+axios.defaults.baseURL = 'http://localhost:3001';
+
+LogBox.ignoreAllLogs();
 
 const selectColorMode = (scheme: 'light' | 'dark') => (light: string, dark: string) => scheme === 'light' ? light : dark;
 

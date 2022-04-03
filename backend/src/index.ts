@@ -15,7 +15,7 @@ const pool = new Pool({
 })
 
 admin.initializeApp({
-    credential: admin.credential.cert(require('../serviceAccountKey.json')),
+    credential: admin.credential.cert(require('./serviceAccountKey.json')),
     databaseURL: "https://your-firebase-project-default-rtdb.firebaseio.com"
 });
 
@@ -43,7 +43,7 @@ app.use(decodeUserToken);
 app.use(cors());
 app.use(bp.json());
 
-app.use('/pools', poolRouter);
+app.use('/pool', poolRouter);
 app.use('/chat', chatRouter);
 
 app.get('/placesearch', async (req, res) => {

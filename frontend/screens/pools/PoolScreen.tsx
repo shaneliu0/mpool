@@ -20,7 +20,6 @@ import Toast from 'react-native-toast-message';
 import { Text, View } from '../../components/Themed';
 import { RootTabScreenProps, PoolDetails } from '../../types';
 
-
 interface PositionedMapProps {
   pool: PoolDetails;
 }

@@ -1,4 +1,5 @@
 import express from 'express';
+import moment from 'moment';
 import { Pool } from 'pg';
 
 // @ts-ignore;
@@ -11,7 +12,10 @@ const MAX_STARTING_DIST = 10;
 interface Place {
     place_id: string;
     place_name: string;
-    coordinates: string;
+    coordinates: {
+        x: number;
+        y: number;
+    };
 }
 
 router.get('/search', async (req, res) => {
@@ -21,48 +25,46 @@ router.get('/search', async (req, res) => {
     // make sure that the current start point and start place id coordinates are within 5 miles
 
     try {
-        const { rows: currentStartPlaceRows } = await pool.query(`SELECT * from place WHERE place_id = $1`, [startPlaceId]);
-        const currentStartPlace: Place = currentStartPlaceRows[0];
-        // TODO: if start place doesn't exist in the database, we would have call the google api to get the coordinates
+        const { rows: test } = await pool.query(`SELECT count(*) from pool`);
+        // console.log(test);
 
+        const { rows: currentStartPlaceRows } = await pool.query(`SELECT * from place WHERE place_id = $1`, [startPlaceId]);
+        // console.log(currentStartPlaceRows);
+        let currentStartPlace: Place = currentStartPlaceRows[0];
+
+        // TODO: if start place doesn't exist in the database, we would have call the google api to get the coordinates
         // query for the cloest places to the current start place
-        const { rows: nearbyPlaces } = await pool.query(`SELECT *
+        const { x, y } = currentStartPlace.coordinates;
+        const { rows: nearbyPlaces } = await pool.query(`SELECT pool.*,
+        closest.coordinates,
+        ( SELECT place_name from place WHERE place_id = pool.start_place_id) as start_place_name,
+        ( SELECT place_name from place WHERE place_id = pool.end_place_id) as end_place_name
         FROM pool
         INNER JOIN (
-        SELECT * FROM place ORDER BY coordinates <-> point '${currentStartPlace.coordinates}' LIMIT 12) as closest
+        SELECT * FROM place ORDER BY coordinates <-> point '${x + ',' + y}' LIMIT 12) as closest
         ON closest.place_id = pool.start_place_id`);
-
-        const unique = [];
-	for (var i = 0; i < nearbyPlaces.length; i++) {
-  	//looping through unique to check if element is already present
-  		var inUnique = false;
-  		console.log(nearbyPlaces[i]);
-  		for (var j = 0; j < unique.length; j++) {
-    			if (nearbyPlaces[i].pool_id === unique[j].pool_id) {
-      				inUnique = true;
-      				break;
-    			}
-  		}
-  		if (!inUnique) {
-    			unique.push(nearbyPlaces[i]);
-  		}
-	}
+        // console.log(nearbyPlaces);
         nearbyPlaces.sort((a, b) => {
-            const [aLat, aLng] = parseCoordinates(a.coordinates);
-            const [bLat, bLng] = parseCoordinates(b.coordinates);
+            const { x: aLat, y: aLng } = a.coordinates;
+            const { x: bLat, y: bLng } = b.coordinates;
 
             const dist = Math.hypot(aLat - bLat, aLng - bLng);
 
             return dist + 0.5 * Math.abs(a.time.getTime() - b.time.getTime());
         });
 
-        // query again for pools
+        // query again for pools. 
 
+
+        const finalPlaces = nearbyPlaces.map(place => ({
+            ...place,
+            time: moment(place.time).calendar()
+        }))
         
-        return res.status(200).json(nearbyPlaces);
+        return res.status(200).json(finalPlaces);
     } catch (error) {
         console.error(error);
-        return res.status(500).send('Something went wrong.')
+        return res.status(500).send('Something went wrong.');
     }
 });
 

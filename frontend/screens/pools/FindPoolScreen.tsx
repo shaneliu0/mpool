@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { useState, useEffect } from 'react';
 
-import { ScrollView, StyleSheet, Button, TouchableOpacity } from 'react-native';
+import { ScrollView, StyleSheet, Button, TouchableOpacity, Alert, Pressable } from 'react-native';
 
 import {
   Heading,
@@ -14,17 +14,17 @@ import {
   Box,
   Input,
   Row,
-  Center
+  Center,
+  IconButton
 } from 'native-base';
 
 import useColorScheme from '../../hooks/useColorScheme';
 
-import DateTimePicker from '@react-native-community/datetimepicker';
 import SkeletonContent from 'react-native-skeleton-content';
-import { GooglePlacesAutocomplete } from 'react-native-google-places-autocomplete';
+import { GooglePlaceData, GooglePlaceDetail, GooglePlacesAutocomplete } from 'react-native-google-places-autocomplete';
 import Toast from 'react-native-toast-message';
 
-import { Text, View } from '../../components/Themed';
+import { Text, View, } from '../../components/Themed';
 import { RootTabScreenProps, PoolSearchQuery, Pool } from '../../types';
 import axios from 'axios';
 
@@ -33,14 +33,84 @@ import { selectUser } from '../../slices/authSlice';
 import { useSelector } from 'react-redux';
 import { authAsync } from 'expo-app-auth';
 
+import { Modal } from 'react-native';
+
+import { PlacesSelector, DateTimeSelector } from '../../components/Pickers';
+
+import { GOOGLE_PLACES_API_KEY } from '../../config';
+import { convertAbsoluteToRem } from 'native-base/lib/typescript/theme/tools';
+
+interface PlaceInputModalProps {
+  onSelect: (place: GooglePlaceData, details: GooglePlaceDetail | null) => void;
+  fieldText: string;
+  fieldValue: string;
+}
+function PlaceInputModal(props: PlaceInputModalProps) {
+  const { onSelect, fieldText, fieldValue } = props;
+  const colorScheme = useColorScheme();
+  const [modalVisible, setModalVisible] = useState(false);
+  const [fieldDisabled, FieldDisabled] = useState(false);
+
+  const onSelectProxy = (place: GooglePlaceData, details: GooglePlaceDetail | null) => {
+    setModalVisible(false);
+    onSelect(place, details);
+  }
+
+  return (
+    <>
+      <Input
+        placeholder={fieldText}
+        onPressOut={() => setModalVisible(true)}
+        value={fieldValue}
+        isDisabled={modalVisible}
+      />
+      <Modal
+        animationType="slide"
+        visible={modalVisible}
+        transparent={true}
+        onRequestClose={() => {
+          setModalVisible(!modalVisible);
+        }}
+        style={{
+          margin: 50
+        }}
+      >
+        <View style={styles.modalContainer}>
+          <View style={styles.modalView}>
+            <HStack justifyContent="flex-start" style={styles.alignRight}>
+              <IconButton
+                onPress={() => setModalVisible(!modalVisible)}
+              >
+                <MaterialIcons name='close' size={24} color={colorScheme === 'light' ? '#000' : '#FFF'} />
+              </IconButton>
+              {true ? (
+                <Heading style={{ fontSize: 20, marginTop: -8, fontWeight: "600" }}>Start typing a location...</Heading>
+
+              ) : (
+                <Heading style={{ fontSize: 20, marginTop: -8, fontWeight: "600", color: 'black' }}>Start typing a location...</Heading>
+              )}
+            </HStack>
+            <View style={[styles.placeSelector, { width: "90%" }]}>
+              <PlacesSelector
+                onSelect={onSelectProxy}
+              />
+            </View>
+          </View>
+        </View>
+      </Modal>
+    </>
+  )
+}
+
 interface PoolSearchProps {
   onSubmit: (query: PoolSearchQuery) => void;
 }
 
 function PoolSearch(props: PoolSearchProps) {
+  const { onSubmit } = props;
   const [date, setDate] = useState(new Date());
   const [hasSelectedDate, setHasSelectedDate] = useState(false);
-  const [location, setLocation] = useState<string | null>(null);
+  const [location, setLocation] = useState<GooglePlaceData | null>(null);
   const [destination, setDestination] = useState<string | undefined>(undefined);
   const user = useSelector(selectUser);
 
@@ -51,12 +121,6 @@ function PoolSearch(props: PoolSearchProps) {
   };
 
   const handleSubmit = () => {
-    return props.onSubmit({
-      time: '2020-04-01T00:00:00.000Z',
-      startPoint: 'mcnamara',
-      endPoint: 'north',
-    });
-
     if (!hasSelectedDate) {
       return alert('Please select a date');
     }
@@ -67,13 +131,13 @@ function PoolSearch(props: PoolSearchProps) {
       return alert('Please select a destination');
     }
 
-    // const query: PoolSearchQuery = {
-    //   time: date.toString(),
-    //   startPoint: location,
-    //   endPoint: destination,
-    // }
+    const query: PoolSearchQuery = {
+      time: date.toString(),
+      startPoint: location.place_id,
+      endPoint: destination,
+    }
 
-    // props.onSubmit(query);
+    onSubmit(query);
   }
 
   return (
@@ -81,32 +145,22 @@ function PoolSearch(props: PoolSearchProps) {
       <Heading size="xl">Hi {user?.displayName.split(' ')[0]}! Where do you need to go?</Heading>
       <Heading size="sm">Date</Heading>
       <View>
-        <HStack space={3} alignItems="center">
-          <DateTimePicker
-            testID="dateTimePicker"
-            value={date}
-            mode={'date'}
-            is24Hour={true}
-            display="default"
-            onChange={onChange}
-            style={styles.datePicker}
-          />
-          <DateTimePicker
-            testID="dateTimePicker"
-            value={date}
-            mode={'time'}
-            is24Hour={true}
-            display="default"
-            onChange={onChange}
-            style={styles.datePicker}
-          />
-        </HStack>
+        <DateTimeSelector
+          onSelect={onChange}
+          value={date}
+        />
       </View>
       <Heading size="sm">Preferred Pick Up Location</Heading>
-      <Box style={[styles.horizontalSpacing, styles.verticalSpacing, { marginTop: 5 }]}>
-        <Input onChange={(e) => setLocation(e.nativeEvent.text)} placeholder="Location" />
+      <Box style={[styles.horizontalSpacing, styles.verticalSpacing, { marginTop: 5, marginBottom: 25 }]}>
+        <PlaceInputModal
+          onSelect={(place, details) => {
+            setLocation(place);
+          }}
+          fieldText="Select Pick Up Location"
+          fieldValue={location?.description || ''}
+        />
       </Box>
-      <Heading size="sm">Destination</Heading>
+      <Heading size="sm">DTW Terminal</Heading>
       <Box style={[styles.horizontalSpacing, styles.verticalSpacing, { marginTop: 5 }]}>
         <Select
           selectedValue={destination}
@@ -220,18 +274,39 @@ export default function FindPoolScreen({ navigation }: RootTabScreenProps<'PoolR
   useEffect(() => {
     if (loadingPools && searchQuery) {
       (async () => {
-        // wait for 0.5 seconds
-        await new Promise((resolve) => setTimeout(resolve, 500));
         // fill with dummy pools
-        setPools(new Array(5).fill(null).map((_, index) => ({
-          id: `${index}`,
-          name: `Pool ${index}`,
-          description: `Pool ${index} description`,
-          time: 'Sunday at 12:45 PM',
-          startPoint: 'Oxford Housing',
-          endPoint: 'McNamara Terminal',
-        })));
-        // const { data } = await axios.get('/pools/search', { params: searchQuery });
+        // setPools(new Array(5).fill(null).map((_, index) => ({
+        //   id: `${index}`,
+        //   name: `Pool ${index}`,
+        //   description: `Pool ${index} description`,
+        //   time: 'Sunday at 12:45 PM',
+        //   startPoint: 'Oxford Housing',
+        //   endPoint: 'McNamara Terminal',
+        // })));
+        let query = searchQuery;
+        try {
+          const { data } = await axios.get('/pool/search', {
+            params: {
+              time: query.time,
+              startPlaceId: query.startPoint,
+              endPlaceId: query.endPoint
+            }
+          });
+
+          setPools(data.map((p: any) => ({
+            id: p.pool_id,
+            name: p.title,
+            time: p.time.toLowerCase(),
+            startPoint: p.start_place_name,
+            endPoint: p.end_place_name,
+          })));
+        } catch (error) {
+          console.error(error);
+          Toast.show({
+            type: 'error',
+            text1: 'Something went wrong.'
+          });
+        }
 
         setLoadingPools(false);
       })();
@@ -239,23 +314,7 @@ export default function FindPoolScreen({ navigation }: RootTabScreenProps<'PoolR
   }, [loadingPools, searchQuery]);
 
   const onSubmit = async (query: PoolSearchQuery) => {
-    try {
-      const { data } = await axios.get('/pools/search', {
-        params: {
-          time: query.time,
-          startPoint: query.startPoint,
-          endPoint: query.endPoint
-        }
-      });
-
-      setSearchQuery(data);
-    } catch (error) {
-      console.error(error);
-      Toast.show({
-        type: 'error',
-        text1: 'Something went wrong.'
-      });
-    }
+    setSearchQuery(query);
   }
 
   if (searchQuery === null) {
@@ -380,9 +439,6 @@ const styles = StyleSheet.create({
   fullWidth: {
     width: '100%',
   },
-  datePicker: {
-    width: '30%',
-  },
   verticalSpacing: {
     marginVertical: 15
   },
@@ -403,5 +459,53 @@ const styles = StyleSheet.create({
     marginVertical: 10,
     height: 1,
     width: '100%',
+  },
+  centeredView: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    marginTop: 22
+  },
+  modalView: {
+    margin: 20,
+    marginTop: 100,
+    borderRadius: 20,
+    padding: 35,
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+    width: "90%"
+  },
+  placeSelector: {
+    borderRadius: 20,
+    padding: 10,
+    elevation: 2,
+    width: "90%",
+    height: "90%",
+  },
+  textStyle: {
+    color: "white",
+    fontWeight: "bold",
+    textAlign: "center"
+  },
+  modalText: {
+    marginBottom: 15,
+    textAlign: "center"
+  },
+  alignRight: {
+    marginRight: "auto"
+  },
+  modalContainer: {
+    flex: 1,
+    //backgroundColor: 'transparent',
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });

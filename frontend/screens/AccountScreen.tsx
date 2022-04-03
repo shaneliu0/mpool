@@ -10,14 +10,16 @@ export default function AccountScreen() {
 
   useEffect(() => {
     (async () => {
-      
+
     })();
   }, []);
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Viewing account</Text>
-    </View>
+    <>
+      <View style={styles.container}>
+        <Text style={styles.title}>Viewing account</Text>
+      </View>
+    </>
   );
 }
 
