@@ -3,13 +3,13 @@ import cors from 'cors';
 import bp from 'body-parser';
 
 import admin from 'firebase-admin';
+import { PrismaClient } from '@prisma/client';
 import { Pool } from 'pg';
-
 const pool = new Pool({
-    user: "postgres",
+    user: process.env.DB_USER,
     password: process.env.DB_PASSWORD,
-    database: "your-firebase-project",
-    host: "your-database-host",
+    database: process.env.DB_DATABASE,
+    host: process.env.DB_HOST,
     port: 5432,
     idleTimeoutMillis: 0
 })
@@ -19,8 +19,12 @@ admin.initializeApp({
     databaseURL: "https://your-firebase-project-default-rtdb.firebaseio.com"
 });
 
-// @ts-ignore
-global.pool = pool;
+
+declare global {
+    var prisma: PrismaClient;
+}
+const prisma = new PrismaClient();
+global.prisma = prisma;
 
 import poolRouter from './routes/pool';
 import chatRouter from './routes/chat';

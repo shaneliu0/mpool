@@ -5,31 +5,47 @@ import admin from 'firebase-admin';
 import { UserRecord } from 'firebase-admin/lib/auth/user-record';
 import { AvailableChat } from '../types';
 import moment from 'moment';
+import { User } from '@prisma/client';
 
 const auth = admin.auth();
 const db = admin.database();
 
-// @ts-ignore;
-const pool: Pool = global.pool;
+const prisma = global.prisma;
 
 const router = express.Router();
 
-async function retrieveMostRecentMessageFromChat(chatId: string) {
-    const query = format(
-        'SELECT * FROM message WHERE chat_id = %L ORDER BY created_at DESC LIMIT 1',
-        chatId
-    );
-    const result = await pool.query(query);
-    return result.rows[0];
+function verifyUser(req: any, res: any, next: any) {
+    if (!req.user) return res.status(403).json({ error: "Unauthorized" });
+    next();
 }
 
-async function retrieveUsersFromChatId(chatId: number) {
-    const { rows: chatUsers } = await pool.query(`SELECT * from chat_user
-                                                    WHERE chat_id = $1`, [chatId]);
-    const users = await Promise.all([...chatUsers].map((sender: any) => {
-        return auth.getUser(sender.user_id);
-    }));
-    return users;
+router.use(verifyUser);
+
+const MESSAGE_PAGE_SIZE = 20;
+
+async function retrieveMostRecentMessageFromChat(poolId: number) {
+    const message = await prisma.message.findFirst({
+        where: {
+            pool: {
+                poolId: poolId
+            }
+        },
+        orderBy: {
+            createdAt: 'desc'
+        }
+    });
+    return message;
+}
+
+async function retrieveUserPhotoURLs(poolId: number) {
+    const users = await prisma.pool.findUniqueOrThrow({
+        where: { poolId: poolId },
+        include: {
+            users: true,
+        }
+    }).then(pool => pool.users);
+    const photoUrls = await Promise.all(users.map(u => auth.getUser(u.userId)));
+    return photoUrls;
 }
 
 async function pushRealTimeUpdate(userId: string, type: string, chatId: string, data: any) {
@@ -40,7 +56,8 @@ async function pushRealTimeUpdate(userId: string, type: string, chatId: string, 
 }
 
 // truncate a message to a certain length and add ellipsis
-function truncateMessage(message: string, length: number) {
+function truncateMessage(message: string | undefined, length: number) {
+    if (!message) message = "";
     if (message && message.length > length) {
         return message.substring(0, length) + '...';
     }
@@ -52,34 +69,43 @@ router.get('/', async (req, res) => {
     const { user } = req;
     const { offset } = req.query;
 
-    if (!user) return res.status(403).send('Unauthorized.');
-
     try {
-        const { rows: availableChats } = await pool.query(`SELECT * from chat_user
-                                                            INNER JOIN chat
-                                                            ON chat_user.chat_id = chat.chat_id
-                                                            AND chat_user.user_id = $1`, [user.uid]);
-
-        // retrieve the most recent message for each chat
-        const linedUpRecentMessage = await Promise.all(availableChats.map((chat) => {
-            return retrieveMostRecentMessageFromChat(chat.chat_id);
+        const availablePools = await prisma.pool.findMany({
+            include: {
+                users: {
+                    where: {
+                        userId: user.uid
+                    }
+                },
+                message: {
+                    take: 1,
+                    orderBy: {
+                        createdAt: "desc"
+                    }
+                }
+            },
+        });
+        console.log(availablePools);
+        const linedUpRecentMessage = await Promise.all(availablePools.map((pool) => {
+            return retrieveMostRecentMessageFromChat(pool.poolId);
         }));
-        const linedUpChatPhotoURLs = await Promise.all(availableChats.map(async (chat) => {
-            const users = (await retrieveUsersFromChatId(chat.chat_id)).filter((u) => u.uid !== user.uid);
-            return users.map((user: UserRecord) => user.photoURL);
+
+        const linedUpChatPhotoURLs = await Promise.all(availablePools.map(async (pool) => {
+            const photoURLs = (await retrieveUserPhotoURLs(pool.poolId)).filter((u) => u.uid !== user.uid).map(u => u.photoURL);
+            return photoURLs;
         }));
 
-        const formatChats = (achats: any[]) => achats.map((chat, idx) => {
+        const formatPools = (achats: typeof availablePools) => achats.map((pool, idx) => {
             return {
-                id: chat.chat_id,
-                name: chat.name,
-                lastMessage: truncateMessage(linedUpRecentMessage[idx]?.text, 24),
-                lastMessageTime: linedUpRecentMessage[idx]?.created_at && moment(linedUpRecentMessage[idx].created_at).calendar(),
+                id: pool.poolId,
+                name: pool.name,
+                lastMessage: truncateMessage(linedUpRecentMessage[idx]?.content, 24),
+                lastMessageTime: linedUpRecentMessage[idx]?.createdAt && moment(linedUpRecentMessage[idx]?.createdAt).calendar(),
                 avatars: linedUpChatPhotoURLs[idx]
             }
         });
-
-        return res.json(formatChats(availableChats));
+        console.log(formatPools(availablePools));
+        return res.json(formatPools(availablePools));
     } catch (error) {
         console.error(error);
         res.status(500).send('Something went wrong.');
@@ -88,41 +114,56 @@ router.get('/', async (req, res) => {
 
 // query params: offset: start @message id
 // returns up to 20 most recent chat messsages in this conversation.
-router.get('/:chatId', async (req, res) => {
+router.get('/:poolId', async (req, res) => {
     const { user } = req;
     const { offset } = req.query;
-    const { chatId } = req.params;
+    const { poolId } = req.params;
 
     if (!user) return res.status(403).send('Unauthorized.');
 
     try {
-        // verify that the user belongs to the requested chat
-        const { rows: verifyInChat } = await pool.query(`SELECT 1 from chat_user WHERE user_id = $1 AND chat_id = $2`, [user.uid, chatId]);
-        if (verifyInChat.length === 0) {
-            return res.status(403).send('User isn\'t in the chat. Forbidden.');
-        }
-        const { rows: messages } = await pool.query(`SELECT * from message 
-                                                    WHERE chat_id = $1
-                                                    ORDER BY created_at DESC
-                                                    LIMIT 20
-                                                    OFFSET $2`, [chatId, offset ?? 0]);
+        const verifyPermission = await prisma.pool.findUnique({
+            where: {
+                poolId: parseInt(poolId),
+            },
+            include: {
+                users: {
+                    where: {
+                        userId: user.uid
+                    }
+                }
+            }
+        });
+        if (!verifyPermission) return res.status(403).send('Unauthorized.');
+
+        const messages = await prisma.message.findMany({
+            skip: parseInt(offset as string) || 0,
+            take: MESSAGE_PAGE_SIZE,
+            where: {
+                poolId: parseInt(poolId)
+            },
+            orderBy: {
+                createdAt: 'desc'
+            },
+        });
 
         const senders = new Set();
-        messages.forEach(row => {
-            senders.add(row.sender_id);
+        messages.forEach(m => {
+            senders.add(m.senderId);
         });
+
         const users = await Promise.all([...senders].map((sender: any) => {
             return auth.getUser(sender);
         }));
 
         // map it to IMessage
-        return res.json(messages.map((chatRow: any, idx: any) => {
-            const foundUser = users.find(e => e.uid === chatRow.sender_id);
+        return res.json(messages.map((message) => {
+            const foundUser = users.find(e => e.uid === message.senderId);
 
             return {
-                _id: chatRow.message_id,
-                text: chatRow.text,
-                createdAt: chatRow.created_at,
+                _id: message.messageId,
+                text: message.content,
+                createdAt: message.createdAt,
                 user: {
                     _id: foundUser?.uid,
                     name: foundUser?.displayName,
@@ -136,36 +177,56 @@ router.get('/:chatId', async (req, res) => {
     }
 });
 
-router.post('/:chat_id', async (req, res) => {
+router.post('/:poolId', async (req, res) => {
     const { user } = req;
     const { text } = req.body;
-    const { chat_id } = req.params;
+    const { poolId } = req.params;
 
     if (!user) return res.status(403).send('Unauthorized.');
 
     try {
-        // verify that the user belongs to the requested chat
-        const { rows: verifyInChat } = await pool.query(`SELECT 1 from chat_user WHERE user_id = $1 AND chat_id = $2`, [user.uid, chat_id]);
-        if (verifyInChat.length === 0) {
-            return res.status(403).send('User isn\'t in the chat. Forbidden.');
-        }
+        const verifyPermission = await prisma.pool.findUnique({
+            where: {
+                poolId: parseInt(poolId),
+            },
+            include: {
+                users: {
+                    where: {
+                        userId: user.uid
+                    }
+                }
+            }
+        });
+        if (!verifyPermission) return res.status(403).send('Unauthorized.');
 
-        const { rows: sendResp } = await pool.query(`INSERT INTO message
-                                                        (chat_id, text, sender_id)
-                                                        VALUES ($1, $2, $3)
-                                                        RETURNING message_id, created_at`, [chat_id, text, user.uid]);
+        const message = await prisma.message.create({
+            data: {
+                content: text,
+                senderId: user.uid,
+                poolId: parseInt(poolId)
+            },
+        });
 
         const userRecord = await auth.getUser(user.uid);
 
         // TODO: send a push notification to all users in the chat.
-        const { rows: chatUsers } = await pool.query(`SELECT * from chat_user
-                                                        WHERE chat_id = $1`, [chat_id]);
+        // translate to prisma
+        const poolWithUsers = await prisma.pool.findUniqueOrThrow({
+            where: {
+                poolId: parseInt(poolId),
+            },
+            include: {
+                users: true
+            }
+        });
+        const poolUsers = poolWithUsers.users;
+
         // remove the sender's id from the realtime update recipients
-        chatUsers.forEach(({ user_id }) => {
-            pushRealTimeUpdate(user_id, 'message', chat_id, {
-                _id: sendResp[0].message_id,
+        poolUsers.forEach(({ userId }) => {
+            pushRealTimeUpdate(userId, 'message', poolId, {
+                _id: message.messageId,
                 text,
-                createdAt: sendResp[0].created_at.toISOString(),
+                createdAt: message.createdAt.toISOString(),
                 user: {
                     _id: user.uid,
                     name: userRecord.displayName,
@@ -176,9 +237,9 @@ router.post('/:chat_id', async (req, res) => {
 
         // returns a copy of the message obj.
         return res.json({
-            _id: sendResp[0].message_id,
+            _id: message.messageId,
             text: text,
-            createdAt: sendResp[0].created_at,
+            createdAt: message.createdAt,
             user: {
                 _id: userRecord.uid,
                 name: userRecord.displayName,
