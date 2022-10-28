@@ -108,7 +108,11 @@ interface PoolSearchProps {
 
 function PoolSearch(props: PoolSearchProps) {
   const { onSubmit } = props;
-  const [date, setDate] = useState(new Date());
+  const [date, setDate] = useState(() => {
+    const tmrw = new Date();
+    tmrw.setDate(tmrw.getDate() + 1);
+    return tmrw;
+  });
   const [hasSelectedDate, setHasSelectedDate] = useState(false);
   const [location, setLocation] = useState<GooglePlaceData | null>(null);
   const [destination, setDestination] = useState<string | undefined>(undefined);
@@ -148,6 +152,7 @@ function PoolSearch(props: PoolSearchProps) {
         <DateTimeSelector
           onSelect={onChange}
           value={date}
+          minuteInterval={15}
         />
       </View>
       <Heading size="sm">Preferred Pick Up Location</Heading>
@@ -270,7 +275,6 @@ export default function FindPoolScreen({ navigation }: RootTabScreenProps<'PoolR
   const [searchQuery, setSearchQuery] = useState<PoolSearchQuery | null>(null);
   const [loadingPools, setLoadingPools] = useState(true);
   const [pools, setPools] = useState<any[]>([]);
-
   useEffect(() => {
     if (loadingPools && searchQuery) {
       (async () => {

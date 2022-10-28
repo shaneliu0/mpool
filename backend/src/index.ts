@@ -26,8 +26,9 @@ declare global {
 const prisma = new PrismaClient();
 global.prisma = prisma;
 
-import poolRouter from './routes/pool';
+import poolRouter from './routes/pool/pool';
 import chatRouter from './routes/chat';
+import userRouter from './routes/user';
 
 const app = express();
 
@@ -49,6 +50,7 @@ app.use(bp.json());
 
 app.use('/pool', poolRouter);
 app.use('/chat', chatRouter);
+app.use('/user', userRouter);
 
 app.get('/placesearch', async (req, res) => {
     

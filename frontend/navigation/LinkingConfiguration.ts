@@ -24,8 +24,10 @@ const linking: LinkingOptions<RootStackParamList> = {
           PoolRoot: {
             path: 'pools',
             screens: {
-              FindPoolScreen: 'find',
-              PoolScreen: 'pool/:poolId',
+              HomeScreen: '/',
+              PoolRequestCreationScreen: 'request',
+              PoolRequestViewScreen: 'request/:id',
+              PoolScreen: ':poolId',
             },
           },
           ChatRoot: {

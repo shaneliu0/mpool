@@ -20,10 +20,11 @@ model User {
 }
 
 model Pool {
-  poolId  Int       @id @default(autoincrement())
-  name    String    @db.VarChar(255)
-  message Message[]
-  users   User[]
+  poolId      Int           @id @default(autoincrement())
+  name        String        @db.VarChar(255)
+  message     Message[]
+  users       User[]
+  PoolRequest PoolRequest[]
 }
 
 model Message {
@@ -47,20 +48,39 @@ model Place {
 model PoolSeason {
   id          Int           @id @default(autoincrement())
   name        String        @db.VarChar(255)
+  endsAt      DateTime
   PoolRequest PoolRequest[]
+  active      Boolean
 }
 
 model PoolRequest {
-  requestId    Int        @id @default(autoincrement())
-  season       PoolSeason @relation(fields: [poolSeasonId], references: [id])
-  seasonId     Int
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
-  user         User       @relation(fields: [userId], references: [userId])
-  userId       String
-  from         Place      @relation(name: "from", fields: [fromId], references: [placeId])
-  fromId       Int
-  to           Place      @relation(name: "to", fields: [toId], references: [placeId])
-  toId         Int
-  poolSeasonId Int
+  requestId  Int        @id @default(autoincrement())
+  season     PoolSeason @relation(fields: [seasonId], references: [id])
+  seasonId   Int
+  pool       Pool       @relation(fields: [poolId], references: [poolId])
+  poolId     Int
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+  user       User       @relation(fields: [userId], references: [userId])
+  userId     String
+  departTime DateTime
+  from       Place      @relation(name: "from", fields: [fromId], references: [placeId])
+  fromId     Int
+  to         Place      @relation(name: "to", fields: [toId], references: [placeId])
+  toId       Int
+  active     Boolean    @default(true)
+}
+
+model Interest {
+  interestId Int              @id @default(autoincrement())
+  name       String
+  emoji      String
+  category   InterestCategory @relation(fields: [categoryId], references: [categoryId])
+  categoryId Int
+}
+
+model InterestCategory {
+  categoryId Int        @id @default(autoincrement())
+  name       String
+  interests  Interest[]
 }

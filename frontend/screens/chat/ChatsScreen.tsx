@@ -43,8 +43,6 @@ function ChatContainer(props: ChatContainerProps) {
     }
   })
 
-  const profilePicture = avatars && avatars[0];
-
   const renderAvatars = () => {
     return avatars && avatars.map((data, idx) => {
       return <Avatar

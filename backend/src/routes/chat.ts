@@ -85,7 +85,6 @@ router.get('/', async (req, res) => {
                 }
             },
         });
-        console.log(availablePools);
         const linedUpRecentMessage = await Promise.all(availablePools.map((pool) => {
             return retrieveMostRecentMessageFromChat(pool.poolId);
         }));
@@ -104,7 +103,6 @@ router.get('/', async (req, res) => {
                 avatars: linedUpChatPhotoURLs[idx]
             }
         });
-        console.log(formatPools(availablePools));
         return res.json(formatPools(availablePools));
     } catch (error) {
         console.error(error);

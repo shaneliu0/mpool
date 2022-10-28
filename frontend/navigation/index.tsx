@@ -22,6 +22,7 @@ import NotFoundScreen from '../screens/NotFoundScreen';
 
 import FindPoolScreen from '../screens/pools/FindPoolScreen';
 import PoolScreen from '../screens/pools/PoolScreen';
+import HomeScreen from '../screens/pools/HomeScreen';
 
 import ChatScreen from '../screens/chat/ChatsScreen';
 import SpecficChatScreen from '../screens/chat/SpecificChatScreen';
@@ -124,8 +125,9 @@ const PoolStack = createNativeStackNavigator<PoolParamList>();
 function PoolNavigator() {
   return (
     <PoolStack.Navigator
-      initialRouteName="FindPool"
+      initialRouteName="Home"
     >
+      <PoolStack.Screen name="Home" component={HomeScreen} options={{ title: "Pools" }} />
       <PoolStack.Screen name="FindPool" component={FindPoolScreen} options={{ title: 'Find Pool' }} />
       <PoolStack.Screen name="PoolScreen" component={PoolScreen} options={{ title: 'Pool' }} />
     </PoolStack.Navigator>

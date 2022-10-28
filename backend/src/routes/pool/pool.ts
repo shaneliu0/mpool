@@ -1,29 +1,28 @@
 import express from 'express';
-import moment from 'moment';
-import { Pool } from 'pg';
+import seasonRouter from './season';
 
-// @ts-ignore;
-const pool: Pool = global.pool;
+const prisma = global.prisma;
 
 const router = express.Router();
 
 const MAX_STARTING_DIST = 10;
 
-interface Place {
-    place_id: string;
-    place_name: string;
-    coordinates: {
-        x: number;
-        y: number;
-    };
-}
+/* 
+    if time diff is more than 4 hours apart, then don't match
+    destination less than 2 miles apart
+    starting is less than 2 miles apart
 
+    now match on interest:
+*/
+const LOC_WEIGHT = 0.60;
+const TIME_WEIGHT = 0.20;
+const INTERESTS_WEIGHT = 0.20;
+
+router.use('/season', seasonRouter);
+
+// search for a pool
 router.get('/search', async (req, res) => {
-
-});
-
-router.post('/', async (req, res) => {
-
+    
 });
 
 
@@ -32,12 +31,9 @@ router.post('/', async (req, res) => {
  *  @returns Nothing
  */
 router.post('/:poolId/join', async (req, res) => {
-    await pool.query(`INSERT INTO chat_user VALUES (${req.params.poolId}, '${req.user.uid}')`);
+
     return res.json({ status: "OK" });
 });
-
-
-
 
 function parseCoordinates(coords: string): number[] {
     const [lat, lng] = coords.split(',');

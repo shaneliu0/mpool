@@ -41,6 +41,7 @@ export type RootTabScreenProps<Screen extends keyof RootTabParamList> = Composit
 >;
 
 export type PoolParamList = {
+  Home: undefined;
   FindPool: undefined;
   PoolScreen: undefined;
 }

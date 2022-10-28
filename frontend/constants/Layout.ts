@@ -9,4 +9,5 @@ export default {
     height,
   },
   isSmallDevice: width < 375,
+  roundRadius: 15,
 };

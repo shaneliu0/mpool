@@ -27,19 +27,23 @@ import {
   useColorMode,
   Skeleton
 } from 'native-base';
-import { useEffect, useState, useCallback } from 'react';
+import Colors from './constants/Colors';
+import { API_BASE_URL } from './config';
 
 // configurate axios
-axios.defaults.baseURL = 'http://localhost:3001';
+axios.defaults.baseURL = API_BASE_URL;
 
 LogBox.ignoreAllLogs();
 
 const selectColorMode = (scheme: 'light' | 'dark') => (light: string, dark: string) => scheme === 'light' ? light : dark;
 
+export const ThemeContext = React.createContext<typeof Colors.light>(Colors.light);
+
 function App() {
   const isLoadingComplete = useCachedResources();
   const colorScheme = useColorScheme();
   const colorSelect = selectColorMode(colorScheme);
+  const darkMode = colorScheme === 'dark';
 
   const theme = extendTheme({
     components: {
@@ -78,13 +82,15 @@ function App() {
     return null;
   } else {
     return (
-      <NativeBaseProvider theme={theme}>
-        <SafeAreaProvider>
-          <Navigation colorScheme={colorScheme} />
-          <StatusBar />
-          <Toast />
-        </SafeAreaProvider>
-      </NativeBaseProvider>
+      <ThemeContext.Provider value={darkMode ? Colors.dark : Colors.light}>
+        <NativeBaseProvider theme={theme}>
+          <SafeAreaProvider>
+            <Navigation colorScheme={colorScheme} />
+            <StatusBar />
+            <Toast />
+          </SafeAreaProvider>
+        </NativeBaseProvider>
+      </ThemeContext.Provider>
     );
   }
 };

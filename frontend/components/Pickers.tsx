@@ -44,9 +44,10 @@ export function PlacesSelector(props: PlacesSelectorProps) {
 interface DateTimeSelectorProps {
     onSelect: (event: any, selectedDate: any) => void;
     value: Date;
+    minuteInterval?: number;
 }
 export function DateTimeSelector(props: DateTimeSelectorProps) {
-    const { onSelect, value } = props;
+    const { onSelect, value, minuteInterval } = props;
     const [dateSelectorOpen, setDateSelectorOpen] = useState(false);
     const [timeSelectorOpen, setTimeSelectorOpen] = useState(false);
 
@@ -65,6 +66,7 @@ export function DateTimeSelector(props: DateTimeSelectorProps) {
                     display="default"
                     onChange={onSelect}
                     style={styles.datePicker}
+                    minuteInterval={minuteInterval}
                 />
                 <DateTimePicker
                     minimumDate={new Date()}
@@ -74,6 +76,7 @@ export function DateTimeSelector(props: DateTimeSelectorProps) {
                     display="default"
                     onChange={onSelect}
                     style={styles.datePicker}
+                    minuteInterval={minuteInterval}
                 />
             </HStack>
         )
