@@ -11,8 +11,13 @@ export function MonoText(props: TextProps) {
   return <BaseText {...props} style={[props.style, { fontFamily: 'space-mono' }]} />;
 }
 
-interface CustomTextProps {
-  variant: "h1" | "h2" | "subtitle" | "body";
+export interface CustomTextProps {
+  variant:
+  "h1" |
+  "h2" |
+  "subtitle" |
+  "body" |
+  "bodylarge";
 }
 
 // ex: "Hi <name>!"
@@ -57,6 +62,16 @@ function Body(props: TextProps) {
   }, props.style, baseTextStyle]} />;
 }
 
+function BodyLarge(props: TextProps) {
+  return <BaseText {...props} style={[{
+    fontSize: 24,
+    fontWeight: '300',
+    marginTop: 15,
+    marginLeft: 15,
+    lineHeight: 29,
+  }, props.style, baseTextStyle]} />
+}
+
 export default function Text(props: TextProps & CustomTextProps) {
   const { variant } = props;
 
@@ -69,5 +84,7 @@ export default function Text(props: TextProps & CustomTextProps) {
       return <Subtitle1 {...props} />
     case "body":
       return <Body {...props} />
+    case "bodylarge":
+      return <BodyLarge {...props} />
   }
 }

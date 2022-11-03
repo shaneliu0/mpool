@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { useContext, useEffect, useState } from 'react';
 
-import { StyleSheet, TouchableOpacity } from 'react-native';
+import { ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
 
 import Toast from 'react-native-toast-message';
 
@@ -21,6 +21,7 @@ import {
 } from '../../dataAccess/poolData';
 import { } from '@react-navigation/core';
 import { AuthErrorCodes } from 'firebase/auth';
+import * as Logging from '../../Logging';
 
 interface PoolSearchProps {
     navigation: RootTabScreenProps<'PoolRoot'>['navigation'];
@@ -41,11 +42,7 @@ function HomeFeed(props: PoolSearchProps) {
                     setPoolSeasons(resp);
                     setLoadingPoolSeasons(false);
                 } catch (e) {
-                    console.error(e);
-                    Toast.show({
-                        type: 'error',
-                        text1: "Something went wrong!"
-                    });
+                    Logging.Error(e);
                 }
             })();
         }
@@ -69,7 +66,7 @@ function HomeFeed(props: PoolSearchProps) {
     };
 
     return (
-        <View style={styles.fullWidth}>
+        <ScrollView style={styles.fullWidth}>
             <Text variant="h1">Hi {user?.displayName.split(' ')[0]}!</Text>
             <Text variant="h2">Fall break is just around the corner!</Text>
             <Text variant="subtitle">Upcoming Pools</Text>
@@ -80,7 +77,7 @@ function HomeFeed(props: PoolSearchProps) {
             >
                 {renderPoolSeasons()}
             </View>
-        </View>
+        </ScrollView>
     );
 }
 
@@ -119,7 +116,12 @@ function PoolSeason(props: PoolSeasonData & PoolSeasonComponentProps) {
     };
 
     const handleCreateRequest = () => {
-
+        navigation.navigate('PoolRoot', {
+            screen: 'PoolRequestCreation',
+            params: {
+                seasonId: id,
+            }
+        } as never);
     };
 
     const animatedViewStyle = useAnimatedStyle(() => {
@@ -139,6 +141,8 @@ function PoolSeason(props: PoolSeasonData & PoolSeasonComponentProps) {
         buttonOpacity.value = withDelay(200, withTiming(expanded ? 1 : 0));
     }, [expanded]);
 
+    const textColor = theme.complementColors['primary'];
+
     return (
         <Animated.View
             style={[
@@ -157,12 +161,12 @@ function PoolSeason(props: PoolSeasonData & PoolSeasonComponentProps) {
                     height: "100%",
                 }}
             >
-                <Text variant="h2">{name}</Text>
+                <Text variant="h2" style={{ color: textColor }}>{name}</Text>
                 {(() => {
                     if (expanded && requestId) {
                         return (
                             <>
-                                <Text variant="body" style={styles.poolSeasonBodyText}>{expandedBodyText}</Text>
+                                <Text variant="body" style={[{ color: textColor }, styles.poolSeasonBodyText]}>{expandedBodyText}</Text>
                                 <Animated.View style={[animatedButtomStyle, styles.poolSeasonButtonView]}>
                                     <Button onPress={handleViewRequest} color="secondary" style={styles.poolSeasonButton}>View Request</Button>
                                 </Animated.View>
@@ -171,7 +175,7 @@ function PoolSeason(props: PoolSeasonData & PoolSeasonComponentProps) {
                     } else if (expanded && poolId) {
                         return (
                             <>
-                                <Text variant="body" style={styles.poolSeasonBodyText}>{expandedBodyText}</Text>
+                                <Text variant="body" style={[{ color: textColor }, styles.poolSeasonBodyText]}>{expandedBodyText}</Text>
                                 <Animated.View style={[animatedButtomStyle, styles.poolSeasonButtonView]}>
                                     <Button onPress={handleViewPool} color="secondary" style={styles.poolSeasonButton}>View Pool</Button>
                                 </Animated.View>
@@ -180,7 +184,7 @@ function PoolSeason(props: PoolSeasonData & PoolSeasonComponentProps) {
                     } else if (expanded) {
                         return (
                             <>
-                                <Text variant="body" style={styles.poolSeasonBodyText}>{expandedBodyText}</Text>
+                                <Text variant="body" style={[{ color: textColor }, styles.poolSeasonBodyText]}>{expandedBodyText}</Text>
                                 <Animated.View style={[animatedButtomStyle, styles.poolSeasonButtonView]}>
                                     <Button onPress={handleCreateRequest} color="secondary" style={styles.poolSeasonButton}>Create Request</Button>
                                 </Animated.View>
@@ -188,7 +192,7 @@ function PoolSeason(props: PoolSeasonData & PoolSeasonComponentProps) {
                         );
                     } else {
                         return (
-                            <Text variant="body" style={styles.poolSeasonBodyText}>{collapsedBodyText}</Text>
+                            <Text variant="body" style={[{ color: textColor }, styles.poolSeasonBodyText]}>{collapsedBodyText}</Text>
                         );
                     }
                 })()}

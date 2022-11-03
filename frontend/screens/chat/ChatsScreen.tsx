@@ -17,6 +17,7 @@ import { RootTabScreenProps, AvailableChat } from '../../types';
 
 import { Entypo } from '@expo/vector-icons';
 import axios from 'axios';
+import * as Logging from '../../Logging';
 
 interface ChatContainerProps {
   chat: AvailableChat;
@@ -142,11 +143,7 @@ export default function Chats({ route, navigation }: RootTabScreenProps<'ChatRoo
       setChats(data);
       setLoading(false);
     } catch (error) {
-      console.error(error);
-      Toast.show({
-        type: 'error',
-        text1: 'Something went wrong.'
-      });
+      Logging.Error(error);
     }
     setRefreshing(false);
   }, [])

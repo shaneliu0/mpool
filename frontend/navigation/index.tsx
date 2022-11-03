@@ -23,6 +23,8 @@ import NotFoundScreen from '../screens/NotFoundScreen';
 import FindPoolScreen from '../screens/pools/FindPoolScreen';
 import PoolScreen from '../screens/pools/PoolScreen';
 import HomeScreen from '../screens/pools/HomeScreen';
+import PoolRequestCreationScreen from '../screens/pools/PoolRequestCreationScreen';
+import PoolRequestViewScreen from '../screens/pools/PoolRequestViewScreen';
 
 import ChatScreen from '../screens/chat/ChatsScreen';
 import SpecficChatScreen from '../screens/chat/SpecificChatScreen';
@@ -35,11 +37,19 @@ import { useDispatch, useSelector } from 'react-redux';
 
 export default function Navigation({ colorScheme }: { colorScheme: ColorSchemeName }) {
   const user = useSelector((state:any) => state.auth.user);
+  const baseTheme = colorScheme === 'dark' ? DarkTheme : DefaultTheme;
+  const theme = {
+    ...baseTheme,
+    colors: {
+      ...baseTheme.colors,
+      background: '#FFFFFF'
+    }
+  };
 
   return (
     <NavigationContainer
       linking={LinkingConfiguration}
-      theme={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+      theme={theme}>
         {user ? <RootNavigator /> : <SignInNavigator />}
     </NavigationContainer>
   );
@@ -128,6 +138,7 @@ function PoolNavigator() {
       initialRouteName="Home"
     >
       <PoolStack.Screen name="Home" component={HomeScreen} options={{ title: "Pools" }} />
+      <PoolStack.Screen name="PoolRequestCreation" component={PoolRequestCreationScreen} options={{ title: "Pool Request" }} />
       <PoolStack.Screen name="FindPool" component={FindPoolScreen} options={{ title: 'Find Pool' }} />
       <PoolStack.Screen name="PoolScreen" component={PoolScreen} options={{ title: 'Pool' }} />
     </PoolStack.Navigator>

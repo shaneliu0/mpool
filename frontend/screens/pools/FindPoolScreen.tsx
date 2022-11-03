@@ -39,6 +39,7 @@ import { PlacesSelector, DateTimeSelector } from '../../components/Pickers';
 
 import { GOOGLE_PLACES_API_KEY } from '../../config';
 import { convertAbsoluteToRem } from 'native-base/lib/typescript/theme/tools';
+import * as Logging from '../../Logging';
 
 interface PlaceInputModalProps {
   onSelect: (place: GooglePlaceData, details: GooglePlaceDetail | null) => void;
@@ -305,11 +306,7 @@ export default function FindPoolScreen({ navigation }: RootTabScreenProps<'PoolR
             endPoint: p.end_place_name,
           })));
         } catch (error) {
-          console.error(error);
-          Toast.show({
-            type: 'error',
-            text1: 'Something went wrong.'
-          });
+          Logging.Error(error);
         }
 
         setLoadingPools(false);

@@ -1,5 +1,5 @@
 import express from 'express';
-import { PoolSeasonData } from '../../types/dataAccess/poolData';
+import { PoolSeasonData, PoolSeasonDetails } from '../../types/dataAccess/poolData';
 
 const prisma = global.prisma;
 
@@ -54,6 +54,27 @@ router.get('/', async (req, res) => {
     } catch (e) {
         console.error(e);
         return res.status(500).json({ error: "Something went wrong" });
+    }
+});
+
+router.get('/:seasonId', async (req, res) => {
+    const { user } = req;
+    const { seasonId } = req.params;
+
+    return res.json({
+        id: 1,
+        displayTitle: "Thanksgiving Break",
+        destinations: [
+            { label: "McNamara Terminal (AirFrance/Delta)", value: "mcnamara", location: { latitude: 42.225809, longitude: -83.348700 } },
+            { label: "North Terminal (all other airlines)", value: "north", location: { latitude: 42.208432, longitude: -83.355737 }},
+        ]
+    } as PoolSeasonDetails);
+    
+    try {
+        
+    } catch (e) {
+        console.error(e);
+        return res.status(500).json({ error: "Something went wrong!" });
     }
 });
 

@@ -18,6 +18,7 @@ import { useSelector } from 'react-redux';
 import {
   selectUser
 } from '../../slices/authSlice';
+import * as Logging from '../../Logging';
 
 import axios from 'axios';
 
@@ -86,9 +87,7 @@ export default function Chats({ route, navigation }: RootTabScreenProps<'ChatRoo
       mResp.forEach(m => m.sent = true);
       setChats(GiftedChat.append(previousMessages, mResp));
     } catch (error) {
-      console.error(error);
-      Toast.show({
-        type: 'error',
+      Logging.Error(error, {
         text1: 'Couldn\'t send message.'
       })
     }
@@ -102,11 +101,9 @@ export default function Chats({ route, navigation }: RootTabScreenProps<'ChatRoo
       if (data && data.length === 0) return setHasEarlier(false);
       setChats(GiftedChat.prepend(chats, data));
     } catch (error) {
-      console.error(error);
-      Toast.show({
-        type: 'error',
-        text1: 'Something went wrong. Couldn\'t load more messages.'
-      })
+      Logging.Error(error, {
+        text1: 'Something went wrong. Couldn\'t load more messages.',
+      });
     }
     setLoadingEarlier(false);
   }

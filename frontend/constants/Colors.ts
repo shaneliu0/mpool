@@ -29,6 +29,10 @@ export default {
       primary: palette.maize,
       secondary: palette.blue,
     },
+    complementColors: {
+      primary: palette.black,
+      secondary: palette.white,
+    },
     text: '#fff',
     background: '#000',
     tint: tintColorDark,

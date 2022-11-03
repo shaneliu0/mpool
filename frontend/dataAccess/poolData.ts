@@ -24,3 +24,14 @@ export const getPoolSeasons = async (): Promise<PoolSeasonData[]> => {
         }
     });
 };
+
+export interface PoolSeasonDetails {
+    id: number;
+    displayTitle: string;
+    destinations: { label: string, value: string, location: { latitude: number, longitude: number } }[];
+}
+export const getPoolSeasonDetails = async (seasonId: number): Promise<PoolSeasonDetails> => {
+    const resp = await axios.get(`/pool/season/${seasonId}`);
+
+    return (resp.data as PoolSeasonDetails);
+}
