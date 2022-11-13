@@ -138,7 +138,8 @@ function PoolNavigator() {
       initialRouteName="Home"
     >
       <PoolStack.Screen name="Home" component={HomeScreen} options={{ title: "Pools" }} />
-      <PoolStack.Screen name="PoolRequestCreation" component={PoolRequestCreationScreen} options={{ title: "Pool Request" }} />
+      <PoolStack.Screen name="PoolRequestCreation" component={PoolRequestCreationScreen} options={{ title: "Creating Request" }} />
+      <PoolStack.Screen name="PoolRequestView" component={PoolRequestViewScreen} options={{ title: "Viewing Request" }} />
       <PoolStack.Screen name="FindPool" component={FindPoolScreen} options={{ title: 'Find Pool' }} />
       <PoolStack.Screen name="PoolScreen" component={PoolScreen} options={{ title: 'Pool' }} />
     </PoolStack.Navigator>

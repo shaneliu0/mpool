@@ -165,8 +165,8 @@ interface SingleSelectProps {
 export function SingleSelect(props: SingleSelectProps) {
     const { selectedValue, items, label, onValueChange } = props;
 
-    const renderItems = () => items.map(({ label, value }) => (
-        <Select.Item label={label} value={value} />
+    const renderItems = () => items.map(({ label, value }, idx) => (
+        <Select.Item label={label} value={value} key={idx} />
     ))
 
     return (

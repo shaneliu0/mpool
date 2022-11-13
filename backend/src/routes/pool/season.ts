@@ -1,5 +1,6 @@
 import express from 'express';
-import { PoolSeasonData, PoolSeasonDetails } from '../../types/dataAccess/poolData';
+import { resError } from '../../logging';
+import { PoolRequestData, PoolSeasonData, PoolSeasonDetails, SubmitPoolRequestResp } from '../../types/dataAccess/poolData';
 
 const prisma = global.prisma;
 
@@ -86,6 +87,10 @@ router.post('/:seasonId', async (req, res) => {
     const { seasonId } = req.params;
     const { fromId, toId } = req.body;
 
+    return res.json({
+        requestId: 1
+    } as SubmitPoolRequestResp)
+
     try {
         const sid = parseInt(seasonId);
         if (isNaN(sid)) return res.status(403).json({ error: "Bad season id formatting" });
@@ -111,8 +116,40 @@ router.post('/:seasonId', async (req, res) => {
 
         return res.status(200).json({ status: "OK" });        
     } catch (e) {
-        console.error(e);
-        return res.status(500).json({ error: "Something went wrong" })
+        return resError(res, e);
+    }
+});
+
+router.get('/:seasonId/request/:requestId', async (req, res) => {
+    const { user } = req;
+    const { seasonId, requestId } = req.params;
+
+    return res.json({
+        requestId: 1,
+        seasonName: "Thanksgiving Break",
+        seasonId: 1,
+        statusMessage: "You created a pool request just now.",
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+        departTime: Date.now(),
+        from: {
+            name: "University Towers",
+            coords: { latitude: 42.27524219999999, longitude: -83.73333939999999 }
+        },
+        to: {
+            name: "McNamara Terminal",
+            coords: { latitude: 42.225809, longitude: -83.3487 }
+        },
+        destinations: [
+            { label: "McNamara Terminal (AirFrance/Delta)", value: "mcnamara", location: { latitude: 42.225809, longitude: -83.348700 } },
+            { label: "North Terminal (all other airlines)", value: "north", location: { latitude: 42.208432, longitude: -83.355737 }},
+        ],
+    } as PoolRequestData);
+
+    try {
+        
+    } catch (e) {
+        return resError(res, e);
     }
 });
 

@@ -13,6 +13,7 @@ import SkeletonContent from 'react-native-skeleton-content';
 import Toast from 'react-native-toast-message';
 
 import { Text, View } from '../../components/Themed';
+import StyledText from '../../components/StyledText';
 import { RootTabScreenProps, AvailableChat } from '../../types';
 
 import { Entypo } from '@expo/vector-icons';
@@ -170,7 +171,7 @@ export default function Chats({ route, navigation }: RootTabScreenProps<'ChatRoo
         style={styles.chats}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
-        <Heading size="xl">Chats</Heading>
+        <StyledText variant='h1'>Chats</StyledText>
         <View>
           {renderChats()}
         </View>

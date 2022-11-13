@@ -84,3 +84,4 @@ model InterestCategory {
   name       String
   interests  Interest[]
 }
+ 

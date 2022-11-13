@@ -1,10 +1,10 @@
 import React, { useContext, useEffect, useState } from 'react';
-import { View, StyleSheet, Modal, useColorScheme, ScrollView, ViewPagerAndroidBase } from 'react-native';
+import { View, StyleSheet, Modal, useColorScheme, ScrollView, ViewPagerAndroidBase, Alert } from 'react-native';
 import { RootTabScreenProps } from '../../types';
 import Toast from 'react-native-toast-message';
 
 import Text from '../../components/StyledText';
-import { getPoolSeasonDetails, PoolSeasonDetails } from '../../dataAccess/poolData';
+import { defaultPoolSeasonDetails, getPoolSeasonDetails, PoolSeasonDetails, postPoolRequest } from '../../dataAccess/poolData';
 import { DoubleText, ExpandableBox, BulletList, Loading, PositionedMap } from '../../components/Display';
 import { AntDesign, MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons';
 import { DateTimeSelector, PlaceInputModal, PlacesSelector, SingleSelect } from '../../components/Pickers';
@@ -13,6 +13,7 @@ import { GooglePlaceData, GooglePlaceDetail } from 'react-native-google-places-a
 import { ThemeContext } from '../../App';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import StyledButton from '../../components/Button';
+import { FadeInView } from '../../components/Animation';
 import * as Logging from '../../Logging';
 
 import * as Conversion from '../../constants/Conversion';
@@ -36,7 +37,7 @@ function SendingRequest(props: SendingRequestProps) {
 export default function PoolRequestCreationScreen({ route, navigation }: RootTabScreenProps<'PoolRoot'>) {
     const [loadingPoolDetails, setLoadingPoolDetails] = useState(true);
     const [submitting, setSubmitting] = useState(false);
-    const [poolSeasonDetails, setPoolSeasonDetails] = useState<PoolSeasonDetails>({ id: -1, displayTitle: "", destinations: [] });
+    const [poolSeasonDetails, setPoolSeasonDetails] = useState<PoolSeasonDetails>(defaultPoolSeasonDetails);
     const [hasSelectedDate, setHasSelectedDate] = useState(false);
     const [expandedPickerId, setExpandedPickerId] = useState(-1);
     const [location, setLocation] = useState<GooglePlaceData & GooglePlaceDetail | null>(null);
@@ -46,8 +47,6 @@ export default function PoolRequestCreationScreen({ route, navigation }: RootTab
         tmrw.setDate(tmrw.getDate() + 1);
         return tmrw;
     });
-
-    const viewOpacity = useSharedValue(0);
 
     useEffect(() => {
         if (loadingPoolDetails) {
@@ -62,7 +61,6 @@ export default function PoolRequestCreationScreen({ route, navigation }: RootTab
             })();
         }
         if (!loadingPoolDetails) {
-            viewOpacity.value = withTiming(1);
             setTimeout(() => {
                 setExpandedPickerId(timePickerId);
             }, 250);
@@ -79,10 +77,21 @@ export default function PoolRequestCreationScreen({ route, navigation }: RootTab
     const handleSubmit = async () => {
         setSubmitting(true);
         try {
-            await new Promise<void>((resolve) => setTimeout(() => resolve(), 2000));
-            setSubmitting(false);
+            if (!location || !hasSelectedDate || !dest) return Alert.alert("Please fill out all fields.");
+            console.log(location.place_id);
+            const resp = await postPoolRequest(seasonId, {
+                departDate: date.getTime(),
+                fromId: location?.place_id,
+                toId: dest,
+            });
+            navigation.navigate('PoolRoot', {
+                screen: 'PoolRequestView',
+                params: { requestId: resp.requestId, seasonId: seasonId }
+            } as never);
         } catch (e) {
             Logging.Error(e);
+        } finally {
+            setSubmitting(false);
         }
     };
 
@@ -91,7 +100,7 @@ export default function PoolRequestCreationScreen({ route, navigation }: RootTab
         setExpandedPickerId(pid);
     };
 
-    const onDateChange = (event: any, selectedDate: any) => {
+    const onDateChange = (_: any, selectedDate: any) => {
         const currentDate = selectedDate || date;
         setHasSelectedDate(true);
         setDate(currentDate);
@@ -101,19 +110,12 @@ export default function PoolRequestCreationScreen({ route, navigation }: RootTab
         setDest(newDest);
     };
 
-    const animatedViewStyle = useAnimatedStyle(() => {
-        return {
-            opacity: viewOpacity.value,
-        };
-    });
-    if (loadingPoolDetails) return <Loading shouldCenter delay={500} />
+    if (loadingPoolDetails) return <Loading shouldCenter defaultDelay />
 
     const destObj = dest && poolSeasonDetails.destinations.find(e => e.value === dest);
     const locationsSelected = !!(location && dest && destObj);
     return (
-        <Animated.View
-            style={[animatedViewStyle]}
-        >
+        <FadeInView>
             <ScrollView style={[{ marginBottom: "auto", height: "100%", }, styles.fullWidth]}>
                 <View style={{ paddingBottom: 150 }}>
                     <Text variant="h1">{displayTitle}</Text>
@@ -229,7 +231,7 @@ export default function PoolRequestCreationScreen({ route, navigation }: RootTab
             >
                 <StyledButton onPress={handleSubmit} loading={submitting} color='primary'>Create Request</StyledButton>
             </View>
-        </Animated.View>
+        </FadeInView>
     );
 }
 

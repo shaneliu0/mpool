@@ -6,7 +6,7 @@ import { StatusBar } from 'expo-status-bar';
 import React from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import * as SplashScreen from 'expo-splash-screen';
-import { View, Text, Image, LogBox } from 'react-native';
+import { View, Text, Image, LogBox, } from 'react-native';
 
 import axios from 'axios';
 

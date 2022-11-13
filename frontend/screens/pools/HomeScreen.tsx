@@ -108,7 +108,7 @@ function PoolSeason(props: PoolSeasonData & PoolSeasonComponentProps) {
     const toggleExpand = () => handleExpand();
 
     const handleViewRequest = () => {
-
+        
     };
 
     const handleViewPool = () => {

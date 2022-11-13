@@ -45,9 +45,14 @@ interface DoubleTextProps {
     icon: React.ReactNode;
     top: string,
     bottom: string,
+    adornment?: React.ReactNode;
 }
 export function DoubleText(props: DoubleTextProps) {
     const { icon, top, bottom } = props;
+
+    if (props.adornment) {
+        return <AdornedDoubleText adornment={props.adornment} {...props} />
+    }
 
     return (
         <View style={styles.container}>
@@ -67,6 +72,32 @@ export function DoubleText(props: DoubleTextProps) {
             </View>
         </View>
     );
+}
+
+interface AdornedDoubleTextProps extends DoubleTextProps {
+    adornment: React.ReactNode;
+}
+function AdornedDoubleText(props: AdornedDoubleTextProps) {
+    const { adornment, ...otherProps } = props;
+
+    return (
+        <View style={{
+            display: 'flex',
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+        }}>
+            <DoubleText
+                {...otherProps}
+            />
+            <View style={{
+                display: 'flex',
+                justifyContent: 'center',
+                padding: 30,
+            }}>
+                {adornment}
+            </View>
+        </View>
+    )
 }
 
 interface ExpandableBoxProps {
@@ -121,9 +152,9 @@ export function BulletList(props: BulletListProps) {
 
     return (
         <View style={styles.bulletListView}>
-            {items.map(item => {
+            {items.map((item, idx) => {
                 return (
-                    <View style={{ marginBottom: 10 }}>
+                    <View style={{ marginBottom: 10 }} key={idx}>
                         <Text variant={variant} style={{ fontSize: 20, marginTop: 0, }}>{`\u2022 ${item}`}</Text>
                     </View>
                 );
@@ -135,16 +166,19 @@ export function BulletList(props: BulletListProps) {
 interface LoadingProps {
     shouldCenter?: boolean;
     delay?: number;
+    defaultDelay?: boolean;
 }
+const DEFAULT_DELAY = 500;
 export function Loading(props: LoadingProps) {
-    const { shouldCenter, delay } = props;
-    const [show, setShow] = useState<boolean>(delay ? false : true);
+    const { shouldCenter, delay, defaultDelay } = props;
+    const [show, setShow] = useState<boolean>((defaultDelay || delay) ? false : true);
+    const cdelay = defaultDelay ? DEFAULT_DELAY : delay;
 
     useEffect(() => {
-        if (delay) {
+        if (!show) {
             setTimeout(() => {
                 setShow(true);
-            }, delay)
+            }, cdelay)
         }
     }, []);
 
