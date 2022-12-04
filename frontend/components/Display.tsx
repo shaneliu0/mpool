@@ -168,7 +168,7 @@ interface LoadingProps {
     delay?: number;
     defaultDelay?: boolean;
 }
-const DEFAULT_DELAY = 500;
+const DEFAULT_DELAY = 1000;
 export function Loading(props: LoadingProps) {
     const { shouldCenter, delay, defaultDelay } = props;
     const [show, setShow] = useState<boolean>((defaultDelay || delay) ? false : true);

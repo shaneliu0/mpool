@@ -127,7 +127,7 @@ function ChatContainer(props: ChatContainerProps) {
   )
 }
 
-export default function Chats({ route, navigation }: RootTabScreenProps<'ChatRoot'>) {
+export default function Chats({ route, navigation }: RootTabScreenProps<'Chat'>) {
   const [chats, setChats] = useState<AvailableChat[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -155,7 +155,7 @@ export default function Chats({ route, navigation }: RootTabScreenProps<'ChatRoo
     return arr.map((chat, index) => {
       return <ChatContainer key={index} loading={loading} chat={chat} onPress={() => {
         // @ts-ignore
-        navigation.navigate('ChatRoot', {
+        navigation.navigate('Chat', {
           screen: 'SpecificChat',
           params: {
             chatId: chat.id

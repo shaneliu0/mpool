@@ -23,6 +23,7 @@ export default {
     tint: tintColorLight,
     tabIconDefault: '#ccc',
     tabIconSelected: tintColorLight,
+    softForeground: "rgba(0,0,0,.87)"
   },
   dark: {
     colors: {
@@ -38,5 +39,6 @@ export default {
     tint: tintColorDark,
     tabIconDefault: '#ccc',
     tabIconSelected: tintColorDark,
+    softForeground: "rgba(216,216,216,0.87)"
   },
 };

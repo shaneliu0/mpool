@@ -3,12 +3,12 @@
  * https://reactnavigation.org/docs/getting-started
  *
  */
-import { FontAwesome } from '@expo/vector-icons';
+import { AntDesign, FontAwesome } from '@expo/vector-icons';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { NavigationContainer, DefaultTheme, DarkTheme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import * as React from 'react';
-import { ColorSchemeName, Pressable } from 'react-native';
+import { ColorSchemeName, Pressable, TouchableOpacity } from 'react-native';
 
 import Colors from '../constants/Colors';
 import useColorScheme from '../hooks/useColorScheme';
@@ -25,6 +25,8 @@ import PoolScreen from '../screens/pools/PoolScreen';
 import HomeScreen from '../screens/pools/HomeScreen';
 import PoolRequestCreationScreen from '../screens/pools/PoolRequestCreationScreen';
 import PoolRequestViewScreen from '../screens/pools/PoolRequestViewScreen';
+import NotificationsScreen from '../screens/pools/NotificationsScreen';
+import ProfileViewScreen from '../screens/pools/ProfileViewScreen';
 
 import ChatScreen from '../screens/chat/ChatsScreen';
 import SpecficChatScreen from '../screens/chat/SpecificChatScreen';
@@ -35,8 +37,10 @@ import AccountScreen from '../screens/AccountScreen';
 
 import { useDispatch, useSelector } from 'react-redux';
 
+import CustomHomeHeader from './CustomHomeHeader';
+
 export default function Navigation({ colorScheme }: { colorScheme: ColorSchemeName }) {
-  const user = useSelector((state:any) => state.auth.user);
+  const user = useSelector((state: any) => state.auth.user);
   const baseTheme = colorScheme === 'dark' ? DarkTheme : DefaultTheme;
   const theme = {
     ...baseTheme,
@@ -50,7 +54,7 @@ export default function Navigation({ colorScheme }: { colorScheme: ColorSchemeNa
     <NavigationContainer
       linking={LinkingConfiguration}
       theme={theme}>
-        {user ? <RootNavigator /> : <SignInNavigator />}
+      {user ? <RootNavigator /> : <SignInNavigator />}
     </NavigationContainer>
   );
 }
@@ -84,20 +88,20 @@ function BottomTabNavigator() {
 
   return (
     <BottomTab.Navigator
-      initialRouteName="PoolRoot"
+      initialRouteName="Pool"
       screenOptions={{
         tabBarActiveTintColor: Colors[colorScheme].tint,
       }}>
       <BottomTab.Screen
-        name="PoolRoot"
+        name="Pool"
         component={PoolNavigator}
         options={{
           headerShown: false,
           tabBarIcon: ({ color }) => <TabBarIcon name="code" color={color} />,
         }}
       />
-      <BottomTab.Screen 
-        name="ChatRoot"
+      <BottomTab.Screen
+        name="Chat"
         component={ChatNavigator}
         options={{
           headerShown: false,
@@ -124,7 +128,19 @@ function ChatNavigator() {
       initialRouteName="Chats"
     >
       <ChatStack.Screen name="Chats" component={ChatScreen} />
-      <ChatStack.Screen name="SpecificChat" component={SpecficChatScreen} options={{ title: "Chat" }} />
+      <ChatStack.Screen
+        name="SpecificChat"
+        component={SpecficChatScreen}
+        options={{
+          title: "Chat",
+          headerRight: () => (
+            <TouchableOpacity>
+              <AntDesign name="infocirlceo" size={24} color="black" />
+            </TouchableOpacity>
+          ),
+        }}
+      />
+      <PoolStack.Screen name="ProfileView" component={ProfileViewScreen} options={{ title: "Profile" }} />
     </ChatStack.Navigator>
   );
 }
@@ -137,11 +153,13 @@ function PoolNavigator() {
     <PoolStack.Navigator
       initialRouteName="Home"
     >
-      <PoolStack.Screen name="Home" component={HomeScreen} options={{ title: "Pools" }} />
+      <PoolStack.Screen name="Home" component={HomeScreen} options={{ headerTitle: () => <CustomHomeHeader /> }} />
+      <PoolStack.Screen name="Notifications" component={NotificationsScreen} options={{ title: "Notifications" }} />
       <PoolStack.Screen name="PoolRequestCreation" component={PoolRequestCreationScreen} options={{ title: "Creating Request" }} />
       <PoolStack.Screen name="PoolRequestView" component={PoolRequestViewScreen} options={{ title: "Viewing Request" }} />
       <PoolStack.Screen name="FindPool" component={FindPoolScreen} options={{ title: 'Find Pool' }} />
       <PoolStack.Screen name="PoolScreen" component={PoolScreen} options={{ title: 'Pool' }} />
+      <PoolStack.Screen name="ProfileView" component={ProfileViewScreen} options={{ title: "Profile" }} />
     </PoolStack.Navigator>
   );
 }

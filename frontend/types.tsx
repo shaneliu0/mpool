@@ -30,8 +30,8 @@ export type RootStackScreenProps<Screen extends keyof RootStackParamList> = Nati
 >;
 
 export type RootTabParamList = {
-  PoolRoot: undefined;
-  ChatRoot: undefined;
+  Pool: undefined;
+  Chat: undefined;
   Account: undefined;
 };
 
@@ -42,15 +42,18 @@ export type RootTabScreenProps<Screen extends keyof RootTabParamList> = Composit
 
 export type PoolParamList = {
   Home: undefined;
+  Notifications: undefined;
   PoolRequestCreation: undefined;
   PoolRequestView: undefined;
   FindPool: undefined;
   PoolScreen: undefined;
+  ProfileView: undefined;
 }
 
 export type ChatParamList = {
   Chats: undefined;
   SpecificChat: undefined;
+  ProfileView: undefined;
 }
 
 // begin non-navigation types

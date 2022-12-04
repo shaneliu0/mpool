@@ -197,7 +197,7 @@ export function PlaceInputModal(props: PlaceInputModalProps) {
     const colorScheme = useColorScheme();
     const theme = useContext(ThemeContext);
     const [modalVisible, setModalVisible] = useState(false);
-    const [fieldDisabled, FieldDisabled] = useState(false);
+    const [fieldDisabled, setFieldDisabled] = useState(false);
 
     const onSelectProxy = (place: GooglePlaceData, details: GooglePlaceDetail | null) => {
         setModalVisible(false);

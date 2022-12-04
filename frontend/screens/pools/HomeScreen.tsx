@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { useContext, useEffect, useState } from 'react';
 
-import { ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
+import { Modal, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
 
 import Toast from 'react-native-toast-message';
 
@@ -20,11 +20,11 @@ import {
     getPoolSeasons, PoolSeasonData
 } from '../../dataAccess/poolData';
 import { } from '@react-navigation/core';
-import { AuthErrorCodes } from 'firebase/auth';
 import * as Logging from '../../Logging';
+import { Loading } from '../../components/Display';
 
 interface PoolSearchProps {
-    navigation: RootTabScreenProps<'PoolRoot'>['navigation'];
+    navigation: RootTabScreenProps<'Pool'>['navigation'];
 }
 
 function HomeFeed(props: PoolSearchProps) {
@@ -75,14 +75,14 @@ function HomeFeed(props: PoolSearchProps) {
                     marginTop: 15,
                 }}
             >
-                {renderPoolSeasons()}
+                {loadingPoolSeasons ? <Loading shouldCenter defaultDelay /> : renderPoolSeasons()}
             </View>
         </ScrollView>
     );
 }
 
 interface PoolSeasonComponentProps {
-    navigation: RootTabScreenProps<'PoolRoot'>['navigation'];
+    navigation: RootTabScreenProps<'Pool'>['navigation'];
     handleExpand: () => void;
     expanded: boolean;
 }
@@ -108,15 +108,17 @@ function PoolSeason(props: PoolSeasonData & PoolSeasonComponentProps) {
     const toggleExpand = () => handleExpand();
 
     const handleViewRequest = () => {
-        
+        navigation.navigate('Pool', {
+            screen: 'PoolRequestView',
+            params: { requestId: requestId, seasonId: id }
+        } as never);
     };
 
     const handleViewPool = () => {
-
     };
 
     const handleCreateRequest = () => {
-        navigation.navigate('PoolRoot', {
+        navigation.navigate('Pool', {
             screen: 'PoolRequestCreation',
             params: {
                 seasonId: id,
@@ -201,7 +203,7 @@ function PoolSeason(props: PoolSeasonData & PoolSeasonComponentProps) {
     );
 };
 
-export default function HomeScreen({ navigation }: RootTabScreenProps<'PoolRoot'>) {
+export default function HomeScreen({ navigation }: RootTabScreenProps<'Pool'>) {
     return (
         <View style={styles.container}>
             <HomeFeed

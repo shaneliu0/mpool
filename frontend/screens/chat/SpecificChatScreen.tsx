@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { useState, useEffect } from 'react';
 
-import { StyleSheet, ActivityIndicator } from 'react-native';
+import { StyleSheet, ActivityIndicator, TouchableOpacity } from 'react-native';
 
 import {
   Heading
@@ -21,10 +21,53 @@ import {
 import * as Logging from '../../Logging';
 
 import axios from 'axios';
+import { PageSheetModal } from '../../components/Modal';
+import Text from '../../components/StyledText';
+import { AntDesign } from '@expo/vector-icons';
+import { PoolView } from '../pools/PoolScreen';
 
 const db = getDatabase();
 
-export default function Chats({ route, navigation }: RootTabScreenProps<'ChatRoot'>) {
+interface PoolPeekProps {
+  navigation: RootTabScreenProps<'Chat'>['navigation'];
+  poolId: number;
+}
+function PoolPeek(props: PoolPeekProps) {
+  const { navigation, poolId } = props;
+  const [open, setOpen] = useState(false);
+
+  const handleClose = () => setOpen(false);
+  const handleOpen = () => setOpen(true);
+
+  useEffect(() => {
+    navigation.setOptions({
+      headerRight: () => (
+        <TouchableOpacity onPress={handleOpen}>
+          <AntDesign name="infocirlceo" size={24} color="black" />
+        </TouchableOpacity>
+      ),
+    });
+  }, []);
+
+  return (
+    <>
+      <PageSheetModal
+        open={open}
+        onClose={handleClose}
+        title='Current Pool'
+      >
+        <PoolView 
+          navigation={navigation}
+          poolId={poolId} 
+          embedMode
+          onCloseModal={handleClose}
+        />
+      </PageSheetModal>
+    </>
+  );
+}
+
+export default function Chats({ route, navigation }: RootTabScreenProps<'Chat'>) {
   const [chats, setChats] = useState<IMessage[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingEarlier, setLoadingEarlier] = useState(false);
@@ -112,21 +155,24 @@ export default function Chats({ route, navigation }: RootTabScreenProps<'ChatRoo
   const { chatId } = route.params;
 
   return (
-    <View style={styles.container}>
-      {loading && <ActivityIndicator size="large" style={{ margin: 35 }} />}
-      <GiftedChat
-        messages={chats}
-        onSend={handleMessageSend}
-        user={{
-          _id: user?.uid,
-        }}
-        loadEarlier={hasEarlier && !loading}
-        onLoadEarlier={handleLoadEarlier}
-        isLoadingEarlier={loadingEarlier}
-        infiniteScroll={true}
-        renderUsernameOnMessage={true}
-      />
-    </View>
+    <>
+      <PoolPeek navigation={navigation} poolId={chatId} />
+      <View style={styles.container}>
+        {loading && <ActivityIndicator size="large" style={{ margin: 35 }} />}
+        <GiftedChat
+          messages={chats}
+          onSend={handleMessageSend}
+          user={{
+            _id: user?.uid,
+          }}
+          loadEarlier={hasEarlier && !loading}
+          onLoadEarlier={handleLoadEarlier}
+          isLoadingEarlier={loadingEarlier}
+          infiniteScroll={true}
+          renderUsernameOnMessage={true}
+        />
+      </View>
+    </>
   )
 }
 

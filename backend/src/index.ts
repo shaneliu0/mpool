@@ -29,8 +29,17 @@ global.prisma = prisma;
 import poolRouter from './routes/pool/pool';
 import chatRouter from './routes/chat';
 import userRouter from './routes/user';
+import notificationsRouter from './routes/notifications';
 
 const app = express();
+
+const waitForThreeSeconds = () => {
+    return new Promise<void>((resolve, reject) => {
+      setTimeout(() => {
+        resolve();
+      }, 3000);
+    });
+  };
 
 async function decodeUserToken(req: any, res: any, next: any) {
     if (!req.headers.authorization) return next();
@@ -51,6 +60,7 @@ app.use(bp.json());
 app.use('/pool', poolRouter);
 app.use('/chat', chatRouter);
 app.use('/user', userRouter);
+app.use('/notifications', notificationsRouter);
 
 app.get('/placesearch', async (req, res) => {
     

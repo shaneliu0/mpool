@@ -89,3 +89,37 @@ export const postPoolRequest = async (seasonId: number, data: SubmitPoolRequestD
 
     return (resp.data as SubmitPoolRequestResp);
 }
+
+
+export interface PoolMember {
+    userId: string;
+    name: string;
+    username?: string;
+    photoUrl: string;
+}
+export type PoolStatus = "potential" | "confirmed";
+export interface PoolData {
+    poolId: number;
+    seasonName: string;
+    status: PoolStatus;
+    statusMessage: string;
+    departTime: number;
+    from: PoolPlace;
+    to: PoolPlace;
+    members: PoolMember[]
+}
+export const defaultPoolData: PoolData = {
+    poolId: -1,
+    seasonName: "",
+    status: "potential",
+    statusMessage: "",
+    departTime: 0,
+    from: { name: "", coords: { latitude: 0, longitude: 0 }},
+    to: { name: "", coords: { latitude: 0, longitude: 0 }},
+    members: [],
+}
+export const getPool = async (poolId: number): Promise<PoolData> => {
+    const resp = await axios.get(`/pool/${poolId}`);
+
+    return (resp.data as PoolData);
+}

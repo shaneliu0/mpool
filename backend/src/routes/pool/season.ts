@@ -85,7 +85,7 @@ router.get('/:seasonId', async (req, res) => {
 router.post('/:seasonId', async (req, res) => {
     const { user } = req;
     const { seasonId } = req.params;
-    const { fromId, toId } = req.body;
+    const { departDate, fromId, toId } = req.body;
 
     return res.json({
         requestId: 1
@@ -107,6 +107,7 @@ router.post('/:seasonId', async (req, res) => {
 
         await prisma.poolRequest.create({
             data: {
+                departTime: new Date(departDate),
                 season: { connect: { id: sid } },
                 user: { connect: { userId: user.uid }},
                 from: { connect: { placeId: fromId }},

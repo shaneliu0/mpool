@@ -34,7 +34,7 @@ function SendingRequest(props: SendingRequestProps) {
     )
 }
 
-export default function PoolRequestCreationScreen({ route, navigation }: RootTabScreenProps<'PoolRoot'>) {
+export default function PoolRequestCreationScreen({ route, navigation }: RootTabScreenProps<'Pool'>) {
     const [loadingPoolDetails, setLoadingPoolDetails] = useState(true);
     const [submitting, setSubmitting] = useState(false);
     const [poolSeasonDetails, setPoolSeasonDetails] = useState<PoolSeasonDetails>(defaultPoolSeasonDetails);
@@ -78,13 +78,12 @@ export default function PoolRequestCreationScreen({ route, navigation }: RootTab
         setSubmitting(true);
         try {
             if (!location || !hasSelectedDate || !dest) return Alert.alert("Please fill out all fields.");
-            console.log(location.place_id);
             const resp = await postPoolRequest(seasonId, {
                 departDate: date.getTime(),
                 fromId: location?.place_id,
                 toId: dest,
             });
-            navigation.navigate('PoolRoot', {
+            navigation.navigate('Pool', {
                 screen: 'PoolRequestView',
                 params: { requestId: resp.requestId, seasonId: seasonId }
             } as never);

@@ -11,12 +11,24 @@ datasource db {
 }
 
 model User {
-  userId      String        @id
-  email       String        @unique
-  displayName String
-  pools       Pool[]
-  requests    PoolRequest[]
-  Message     Message[]
+  userId       String         @id
+  email        String         @unique
+  displayName  String
+  pools        Pool[]
+  requests     PoolRequest[]
+  Message      Message[]
+  Notification Notification[]
+}
+
+model Notification {
+  notificationId Int      @id @default(autoincrement())
+  recipient      User     @relation(fields: [recipientId], references: [userId])
+  recipientId    String
+  createdAt      DateTime @default(now())
+  title          String
+  body           String
+  type           String
+  payload        Json?
 }
 
 model Pool {
@@ -57,8 +69,8 @@ model PoolRequest {
   requestId  Int        @id @default(autoincrement())
   season     PoolSeason @relation(fields: [seasonId], references: [id])
   seasonId   Int
-  pool       Pool       @relation(fields: [poolId], references: [poolId])
-  poolId     Int
+  pool       Pool?      @relation(fields: [poolId], references: [poolId])
+  poolId     Int?
   createdAt  DateTime   @default(now())
   updatedAt  DateTime   @updatedAt
   user       User       @relation(fields: [userId], references: [userId])
@@ -84,4 +96,3 @@ model InterestCategory {
   name       String
   interests  Interest[]
 }
- 

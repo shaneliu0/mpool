@@ -21,16 +21,18 @@ const linking: LinkingOptions<RootStackParamList> = {
       },
       Root: {
         screens: {
-          PoolRoot: {
+          Pool: {
             path: 'pools',
             screens: {
               HomeScreen: '/',
+              NotificationsScreen: 'notifications',
               PoolRequestCreationScreen: 'request',
               PoolRequestViewScreen: 'request/:id',
               PoolScreen: ':poolId',
+              ProfileView: '/profile/:profileId',
             },
           },
-          ChatRoot: {
+          Chat: {
             path: 'chat',
             screens: {
               Chats: 'chats',
