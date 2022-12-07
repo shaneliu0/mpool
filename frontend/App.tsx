@@ -29,6 +29,7 @@ import {
 } from 'native-base';
 import Colors from './constants/Colors';
 import { API_BASE_URL } from './config';
+import moment from 'moment';
 
 // configurate axios
 axios.defaults.baseURL = API_BASE_URL;

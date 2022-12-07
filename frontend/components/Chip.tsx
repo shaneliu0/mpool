@@ -36,6 +36,7 @@ export function ChipContainer(props: ChipContainerProps) {
     return (
         <ScrollView
             horizontal
+            showsHorizontalScrollIndicator={false}
             style={{
                 marginTop: 10,
                 paddingHorizontal: noPadding ? undefined : 10,

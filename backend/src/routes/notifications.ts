@@ -16,7 +16,7 @@ router.get('/', async (req, res) => {
             title: "We matched you with a pool",
             body: "Decide if you want to join.",
             type: 'poolmatched',
-            createdAt: new Date().getTime(),
+            createdAt: (() => { let d =  new Date(); d.setDate(d.getDate() - 2); return d.getTime() })(),
             payload: { poolId: 1 }
         }
     ] as Notification[]);

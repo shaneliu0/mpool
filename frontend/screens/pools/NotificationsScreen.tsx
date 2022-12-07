@@ -9,13 +9,14 @@ import { Loading } from '../../components/Display';
 import Text from '../../components/StyledText';
 import { FadeInView } from '../../components/Animation';
 import { AntDesign } from '@expo/vector-icons';
+import moment from 'moment';
 
 interface NotificationProps {
     navigation: RootTabScreenProps<'Pool'>['navigation'];
 }
 
 function PoolMatched(props: Notification & NotificationProps) {
-    const { body, payload, title, type, navigation } = props;
+    const { body, payload, title, type, createdAt, navigation } = props;
 
     const handlePress = () => {
         try {
@@ -27,6 +28,8 @@ function PoolMatched(props: Notification & NotificationProps) {
             Logging.Error(e);
         }
     };
+
+    const timeText = moment(createdAt).fromNow();
 
     return (
         <TouchableOpacity
@@ -42,7 +45,7 @@ function PoolMatched(props: Notification & NotificationProps) {
             <AntDesign name="link" size={24} color="black" />
             <View style={{ marginLeft: 15, }}>
                 <Text variant="bodylarge" style={{ marginTop: 5, fontWeight: '400', fontSize: 18 }}>{title}</Text>
-                <Text variant="body" style={{ marginTop: 5, fontSize: 15 }}>{body}</Text>
+                <Text variant="body" style={{ marginTop: 5, fontSize: 15 }}>{body} <Text style={{ fontWeight: '100' }}>{timeText}</Text></Text>
             </View>
             <AntDesign name="arrowright" size={24} color="black" style={{
                 margin: 20,

@@ -42,3 +42,5 @@ export default {
     softForeground: "rgba(216,216,216,0.87)"
   },
 };
+
+export const grayLining = "#5f6368";

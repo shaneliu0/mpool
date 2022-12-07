@@ -2,6 +2,7 @@ import axios from "axios";
 
 export interface ProfileContentBlock {
     heading: string;
+    promptId: number;
     text?: string;
     tiles?: string[];
 }
@@ -16,7 +17,8 @@ export const defaultProfile: Profile = {
     name: "",
     description: "",
     content: [],
-};
+}
+export const defaultContentBlock = { heading: "", promptId: -1 };
 export async function getProfile(userId: string): Promise<Profile> {
     const resp = await axios.get(`/user/${userId}/profile`);
     return (resp.data as Profile);
@@ -24,4 +26,13 @@ export async function getProfile(userId: string): Promise<Profile> {
 export async function getOwnProfile(): Promise<Profile> {
     const resp = await axios.get('/user/profile');
     return (resp.data as Profile);
+}
+
+export interface ProfileContentPrompt {
+    title: string;
+    promptId: number;
+}
+export async function getProfileContentPrompts() {
+    const resp = await axios.get('/user/profile/edit/prompts');
+    return (resp.data as ProfileContentPrompt[]);
 }

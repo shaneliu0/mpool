@@ -8,23 +8,22 @@ import { Loading } from '../components/Display';
 import EditScreenInfo from '../components/EditScreenInfo';
 import { PageSheetModal } from '../components/Modal';
 import { View } from '../components/Themed';
-import { defaultProfile, getOwnProfile, Profile, ProfileContentBlock } from '../dataAccess/users';
+import { defaultContentBlock, defaultProfile, getOwnProfile, getProfileContentPrompts, Profile, ProfileContentBlock, ProfileContentPrompt } from '../dataAccess/users';
 import { ProfileDisplay } from './pools/ProfileViewScreen';
 import Text from '../components/StyledText';
 import { ThemeContext } from '../App';
-import Animated, { runOnJS, useAnimatedStyle, useSharedValue, withSpring, withTiming, } from 'react-native-reanimated';
+import Animated, { runOnJS, useAnimatedProps, useAnimatedStyle, useSharedValue, withSpring, withTiming, } from 'react-native-reanimated';
 import { BlurView } from 'expo-blur';
 import Button from '../components/Button';
 import { useRef } from 'react';
 import { Chip, ChipContainer } from '../components/Chip';
-import { Ionicons } from '@expo/vector-icons';
+import { AntDesign, Ionicons, MaterialIcons } from '@expo/vector-icons';
+import * as Logging from '../Logging';
 
 function capitalizeFirstLetter(str: string) {
   if (!str) return;
   return str.charAt(0).toUpperCase() + str.slice(1);
 }
-
-const AnimatedBlurView = Animated.createAnimatedComponent(BlurView);
 
 interface EditableKeyProps {
   open: boolean;
@@ -195,10 +194,16 @@ function EditableContent(props: EditableContentProps) {
         {
           text: 'Remove',
           onPress: () => {
-            setValue({
-              ...value,
-              tiles: value.tiles && value.tiles.filter((_, idx) => idx !== tidx)
-            })
+            const removeTile = () => {
+              setValue({
+                ...value,
+                tiles: value.tiles && value.tiles.filter((_, idx) => idx !== tidx)
+              })
+            };
+            tilesOpacity.value = withTiming(0, {}, () => {
+              runOnJS(removeTile)();
+              tilesOpacity.value = withTiming(1);
+            });
           },
         },
       ],
@@ -212,10 +217,17 @@ function EditableContent(props: EditableContentProps) {
       "Add an item",
       undefined,
       (t: string) => {
-        setValue({
-          ...value,
-          tiles: [...(tiles || []), t]
-        })
+        const addTile = () => {
+          setValue({
+            ...value,
+            tiles: [...(tiles || []), t]
+          })
+        };
+
+        tilesOpacity.value = withTiming(0, {}, () => {
+          runOnJS(addTile)();
+          tilesOpacity.value = withTiming(1);
+        });
       }
     )
   }
@@ -246,6 +258,7 @@ function EditableContent(props: EditableContentProps) {
 
   const translateOffsets = useSharedValue(200);
   const opacities = useSharedValue(0);
+  const tilesOpacity = useSharedValue(1);
 
   const SPRING_OPTIONS: Animated.WithSpringConfig = {
     damping: 20,
@@ -268,6 +281,11 @@ function EditableContent(props: EditableContentProps) {
     return {
       transform: [{ translateY: withSpring(-(translateOffsets.value), SPRING_OPTIONS) }],
       opacity: withSpring(opacities.value, SPRING_OPTIONS),
+    }
+  });
+  const aniamtedTilesStyle = useAnimatedStyle(() => {
+    return {
+      opacity: tilesOpacity.value,
     }
   });
 
@@ -332,20 +350,22 @@ function EditableContent(props: EditableContentProps) {
             <Animated.View style={animatedHeaderViewStyle}>
               <Text variant="h1">{heading}</Text>
             </Animated.View>
-            <Animated.View style={[animatedTextFieldViewStyle, styles.transparent, { padding: 15 }]}>
+            <Animated.View style={[animatedTextFieldViewStyle, styles.transparent, { padding: 15, }]}>
               <Input multiline value={text} onChangeText={handleTextChange} variant="underlined" placeholder={`New ${heading.toLowerCase()}`} />
-              <ChipContainer noPadding>
-                {(tiles || []).map((t, idx) => {
-                  return (
-                    <TouchableOpacity onPress={() => handleTileRemove(idx)}>
-                      <Chip key={idx} content={t + "  ⓧ"} />
-                    </TouchableOpacity>
-                  )
-                })}
-                <TouchableOpacity onPress={handleTileAdd}>
-                  <Chip key="add" content=" + " />
-                </TouchableOpacity>
-              </ChipContainer>
+              <Animated.View style={aniamtedTilesStyle}>
+                <ChipContainer noPadding>
+                  {(tiles || []).map((t, idx) => {
+                    return (
+                      <TouchableOpacity key={idx} onPress={() => handleTileRemove(idx)}>
+                        <Chip key={idx} content={t + "  ⓧ"} />
+                      </TouchableOpacity>
+                    )
+                  })}
+                  <TouchableOpacity onPress={handleTileAdd}>
+                    <Chip key="add" content=" + " />
+                  </TouchableOpacity>
+                </ChipContainer>
+              </Animated.View>
             </Animated.View>
             <Animated.View style={[animatedButtonsViewStyle, styles.editCancel]}>
               <View style={[{
@@ -367,6 +387,300 @@ function EditableContent(props: EditableContentProps) {
   )
 }
 
+interface AddContentProps {
+  open: boolean;
+  prompts: ProfileContentPrompt[] | null;
+  handleOpen: () => void;
+  handleClose: () => void;
+  handleAdd: (newContent: ProfileContentBlock) => void;
+}
+function AddContent(props: AddContentProps) {
+  const {
+    open,
+    prompts,
+    handleOpen,
+    handleClose,
+    handleAdd,
+  } = props;
+  const [value, setValue] = useState<ProfileContentBlock>(defaultContentBlock);
+  const [chosenPromptIdx, setChosenPromptIdx] = useState(-1);
+  const [realOpen, setRealOpen] = useState(false);
+  const [promptsOpen, setPromptsOpen] = useState(false);
+  const DURATION = 200;
+  const BLUR_DURATION = DURATION * 3;
+  const initialPromptsOpacity = 0.7;
+  const timingOptions = { duration: DURATION };
+
+  const handleTextChange = (t: string) => {
+    setValue({
+      ...value,
+      text: t,
+    })
+  };
+  const handleTileRemove = (tidx: number) => {
+    Alert.alert(
+      'Remove tile',
+      'Are you sure you want to remove this tile?',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Remove',
+          onPress: () => {
+            const removeTile = () => {
+              setValue({
+                ...value,
+                tiles: value.tiles && value.tiles.filter((_, idx) => idx !== tidx)
+              })
+            };
+            tilesOpacity.value = withTiming(0, {}, () => {
+              runOnJS(removeTile)();
+              tilesOpacity.value = withTiming(1);
+            });
+          },
+        },
+      ],
+      {
+        cancelable: true,
+      }
+    );
+  };
+  const handleTileAdd = () => {
+    Alert.prompt(
+      "Add an item",
+      undefined,
+      (t: string) => {
+        const addTile = () => {
+          setValue({
+            ...value,
+            tiles: [...(tiles || []), t]
+          })
+        };
+
+        tilesOpacity.value = withTiming(0, {}, () => {
+          runOnJS(addTile)();
+          tilesOpacity.value = withTiming(1);
+        });
+      }
+    )
+  }
+  const handleChange = (idx: number) => {
+    handlePromptsClose();
+    setChosenPromptIdx(idx);
+    setValue({
+      ...value,
+      heading: prompts ? prompts[idx].title : "",
+      promptId: prompts ? prompts[idx].promptId : -1
+    })
+  };
+  const createEdit = () => {
+    handleAdd(value);
+    initiateClose();
+  }
+  const initiateClose = () => {
+    handleClose();
+  }
+  const handlePromptsOpen = () => {
+    if (!prompts) return;
+    translateOffsets.value = withTiming(200, timingOptions);
+    opacities.value = withTiming(0, timingOptions);
+    setTimeout(() => {
+      setPromptsOpen(true);
+    }, BLUR_DURATION);
+  }
+  const handlePromptsClose = () => {
+    promptsScale.value = withTiming(initialPromptsOpacity, timingOptions);
+    promptsOpacity.value = withTiming(0, timingOptions);
+    setTimeout(() => {
+      setPromptsOpen(false);
+      translateOffsets.value = withTiming(0, timingOptions);
+      opacities.value = withTiming(1, timingOptions);
+    }, BLUR_DURATION)
+  }
+
+  const translateOffsets = useSharedValue(200);
+  const opacities = useSharedValue(0);
+  const promptsScale = useSharedValue(initialPromptsOpacity);
+  const promptsOpacity = useSharedValue(0);
+  const tilesOpacity = useSharedValue(1);
+
+
+  const SPRING_OPTIONS: Animated.WithSpringConfig = {
+    damping: 20,
+    stiffness: 90,
+  };
+
+  const animatedHeaderViewStyle = useAnimatedStyle(() => {
+    return {
+      transform: [{ translateY: withSpring(-(translateOffsets.value), SPRING_OPTIONS) }],
+      opacity: withSpring(opacities.value, SPRING_OPTIONS),
+    }
+  });
+  const animatedButtonsViewStyle = useAnimatedStyle(() => {
+    return {
+      transform: [{ translateY: withSpring(translateOffsets.value, SPRING_OPTIONS) }],
+      opacity: withSpring(opacities.value, SPRING_OPTIONS),
+    }
+  });
+  const animatedTextFieldViewStyle = useAnimatedStyle(() => {
+    return {
+      transform: [{ translateY: withSpring(-(translateOffsets.value), SPRING_OPTIONS) }],
+      opacity: withSpring(opacities.value, SPRING_OPTIONS),
+    }
+  });
+  const animatedPromptsViewStyle = useAnimatedStyle(() => {
+    return {
+      transform: [{ scale: withSpring(promptsScale.value, SPRING_OPTIONS) }],
+      opacity: withSpring(promptsOpacity.value),
+    }
+  });
+  const aniamtedTilesStyle = useAnimatedStyle(() => {
+    return {
+      opacity: tilesOpacity.value,
+    }
+  });
+
+  useEffect(() => {
+    if (open) {
+      setRealOpen(true);
+      translateOffsets.value = withTiming(0, timingOptions);
+      opacities.value = withTiming(1, timingOptions);
+    } else {
+      translateOffsets.value = withTiming(200, timingOptions);
+      opacities.value = withTiming(0, timingOptions);
+      setTimeout(() => {
+        setRealOpen(false);
+        setValue(defaultContentBlock);
+        setChosenPromptIdx(-1);
+      }, BLUR_DURATION);
+    }
+  }, [open])
+
+  useEffect(() => {
+    if (promptsOpen) {
+      promptsScale.value = withTiming(1, timingOptions);
+      promptsOpacity.value = withTiming(1, timingOptions);
+    } else {
+      promptsScale.value = initialPromptsOpacity;
+      promptsOpacity.value = 0;
+    }
+  }, [promptsOpen]);
+
+  const renderPrompts = () => {
+    if (!prompts) return null;
+    return prompts.map((p, idx) => {
+      const { title, promptId } = p;
+      return (
+        <TouchableOpacity
+          style={{
+            paddingBottom: 10,
+            marginHorizontal: 10,
+          }}
+          onPress={() => handleChange(idx)}
+        >
+          <Text variant="subtitle">{title}</Text>
+        </TouchableOpacity>
+      )
+    });
+  };
+
+  const loadingPrompts = !prompts;
+  const notChosenPrompt = chosenPromptIdx === -1;
+
+  let dname = "";
+  if (loadingPrompts) {
+    dname = "[still loading...]";
+  } else if (chosenPromptIdx !== -1) {
+    dname = prompts[chosenPromptIdx].title;
+  } else {
+    dname = "[tap to edit]";
+  }
+
+  const {
+    heading,
+    text,
+    tiles,
+  } = value;
+
+  return (
+    <>
+      <View style={styles.container}>
+        <TouchableOpacity style={styles.addContentButtonStyle} onPress={handleOpen}>
+          <Ionicons name="add" size={50} color="black" />
+        </TouchableOpacity>
+      </View>
+      {realOpen && (
+        <BlurView intensity={open ? 95 : 0} style={[StyleSheet.absoluteFill, styles.contentEditBlur]}>
+          <View style={styles.transparent}>
+            {promptsOpen ? (
+              <>
+                <Animated.View style={animatedPromptsViewStyle}>
+                  <View style={{
+                    width: "100%",
+                    backgroundColor: "transparent",
+                    justifyContent: "center",
+                    alignItems: "center",
+                    marginTop: -70,
+                    marginBottom: 30,
+                  }}>
+                    <TouchableOpacity onPress={handlePromptsClose}>
+                      <AntDesign name="closecircleo" size={50} color="black" />
+                    </TouchableOpacity>
+                  </View>
+                  <Text variant="h1">Select an option</Text>
+                  {renderPrompts()}
+                </Animated.View>
+              </>
+            ) : (
+              <>
+                <Animated.View style={animatedHeaderViewStyle}>
+                  <TouchableOpacity style={{ flexDirection: "row", alignItems: "center", }} onPress={handlePromptsOpen}>
+                    <Text variant="h1">{dname}</Text>
+                    <View style={{
+                      position: "absolute",
+                      left: "90%",
+                      top: 15,
+                    }}>
+                      {loadingPrompts ? (
+                        <MaterialIcons name="hourglass-full" size={24} color="black" />
+                      ) : (
+                        <MaterialIcons name="edit" size={24} color="black" />
+                      )}
+                    </View>
+                  </TouchableOpacity>
+                </Animated.View>
+                <Animated.View style={[animatedTextFieldViewStyle, styles.transparent, { padding: 15 }]}>
+                  <Input multiline autoFocus value={text} onChangeText={handleTextChange} variant="underlined" placeholder={`Share something...`} />
+                  <Animated.View style={aniamtedTilesStyle}>
+                    <ChipContainer noPadding>
+                      {(tiles || []).map((t, idx) => {
+                        return (
+                          <TouchableOpacity key={idx} onPress={() => handleTileRemove(idx)}>
+                            <Chip key={idx} content={t + "  ⓧ"} />
+                          </TouchableOpacity>
+                        )
+                      })}
+                      <TouchableOpacity onPress={handleTileAdd}>
+                        <Chip key="add" content=" + " />
+                      </TouchableOpacity>
+                    </ChipContainer>
+                  </Animated.View>
+                </Animated.View>
+                <Animated.View style={[animatedButtonsViewStyle, styles.editCancel]}>
+                  <Button style={styles.editCancelItem} color='primary' variant='outlined' onPress={initiateClose}>Cancel</Button>
+                  <Button style={styles.editCancelItem} color='primary' disabled={notChosenPrompt} onPress={notChosenPrompt ? () => undefined : createEdit}>Add</Button>
+                </Animated.View>
+              </>
+            )}
+          </View>
+        </BlurView>
+      )}
+    </>
+  )
+}
+
 interface EditProfileProps {
   initProfile: Profile;
   onProfileRefresh: () => void;
@@ -377,7 +691,9 @@ function EditProfile(props: EditProfileProps) {
   const [open, setOpen] = useState(false);
   const [changed, setChanged] = useState(false);
   const [profile, setProfile] = useState(initProfile);
+  const [prompts, setPrompts] = useState<ProfileContentPrompt[] | null>(null);
   const [openContentIdx, setOpenContentIdx] = useState(-1);
+  const scrollRef = useRef(null);
 
   const handleOpen = () => setOpen(true);
   const handleClose = () => {
@@ -386,6 +702,11 @@ function EditProfile(props: EditProfileProps) {
     // onProfileRefresh();
   };
   const handleElementOpen = (idx: number) => () => {
+    // @ts-ignore
+    scrollRef.current?.scrollTo({
+      y: 0,
+      animated: true,
+    });
     setOpenContentIdx(idx);
   };
   const handleElementClose = (idx: number) => () => {
@@ -403,6 +724,12 @@ function EditProfile(props: EditProfileProps) {
       content: editContentAtIdx(profile.content, idx, newContent),
     })
   };
+  const handleAddContent = (newContent: ProfileContentBlock) => {
+    setProfile({
+      ...profile,
+      content: [...profile.content, newContent]
+    })
+  }
   const handleDeleteBlock = (bidx: number) => () => {
     const spliceAndDelete = () => {
       setProfile({
@@ -444,8 +771,22 @@ function EditProfile(props: EditProfileProps) {
   })
 
   useEffect(() => {
+    if (open) setProfile(initProfile);
+    if (open && !prompts) {
+      (async () => {
+        try {
+          const res = await getProfileContentPrompts();
+          setPrompts(res);
+        } catch (error) {
+          Logging.Error(error);
+        }
+      })();
+    }
+  }, [open]);
 
-  });
+  useEffect(() => {
+    // save the profile whenever profile is changed.
+  }, [profile]);
 
   const {
     photoUrl,
@@ -459,8 +800,8 @@ function EditProfile(props: EditProfileProps) {
         title="Edit Profile"
         onClose={handleClose}
       >
-        <ScrollView style={{ height: "100%", }}>
-          <Animated.View style={[animatedContentViewStyle, { marginBottom: somethingOpen ? 300 : 100, }]}>
+        <ScrollView style={{ height: "100%", }} ref={scrollRef}>
+          <Animated.View style={[animatedContentViewStyle, { marginBottom: somethingOpen ? 400 : 200, }]}>
             <View style={{
               width: "100%",
               height: 200,
@@ -484,6 +825,13 @@ function EditProfile(props: EditProfileProps) {
               handleEdit={handleEditKey}
             />
             {renderContent()}
+            <AddContent
+              open={openContentIdx === openIdx}
+              handleOpen={handleElementOpen(openIdx)}
+              handleClose={handleElementClose(openIdx++)}
+              handleAdd={handleAddContent}
+              prompts={prompts}
+            />
           </Animated.View>
         </ScrollView>
       </PageSheetModal>
@@ -587,5 +935,15 @@ const styles = StyleSheet.create({
   },
   transparent: {
     backgroundColor: "transparent"
+  },
+  addContentButtonStyle: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    width: "95%",
+    height: 120,
+    borderStyle: "solid",
+    borderWidth: 1,
+    borderRadius: 15,
   }
 });

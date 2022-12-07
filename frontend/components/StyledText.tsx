@@ -12,7 +12,7 @@ export function MonoText(props: TextProps) {
 }
 
 export interface CustomTextProps {
-  variant:
+  variant?:
   "h1" |
   "h2" |
   "subtitle" |
@@ -82,9 +82,9 @@ export default function Text(props: TextProps & CustomTextProps) {
       return <Heading2 {...props} />
     case "subtitle":
       return <Subtitle1 {...props} />
-    case "body":
-      return <Body {...props} />
     case "bodylarge":
       return <BodyLarge {...props} />
+    default:
+      return <Body {...props} />
   }
 }

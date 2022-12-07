@@ -22,6 +22,7 @@ import {
 import { } from '@react-navigation/core';
 import * as Logging from '../../Logging';
 import { Loading } from '../../components/Display';
+import { FadeInView } from '../../components/Animation';
 
 interface PoolSearchProps {
     navigation: RootTabScreenProps<'Pool'>['navigation'];
@@ -54,21 +55,25 @@ function HomeFeed(props: PoolSearchProps) {
     }
 
     const renderPoolSeasons = () => {
-        return poolSeasons.map((season, idx) => (
-            <PoolSeason
-                key={idx}
-                navigation={navigation}
-                handleExpand={handleExpandPool(idx)}
-                expanded={expandedPoolIdx === idx}
-                {...season}
-            />
-        ));
+        return (
+            <FadeInView>
+                {poolSeasons.map((season, idx) => (
+                    <PoolSeason
+                        key={idx}
+                        navigation={navigation}
+                        handleExpand={handleExpandPool(idx)}
+                        expanded={expandedPoolIdx === idx}
+                        {...season}
+                    />
+                ))}
+            </FadeInView>
+        )
     };
 
     return (
         <ScrollView style={styles.fullWidth}>
             <Text variant="h1">Hi {user?.displayName.split(' ')[0]}!</Text>
-            <Text variant="h2">Fall break is just around the corner!</Text>
+            <Text variant="h2">Break is just around the corner!</Text>
             <Text variant="subtitle">Upcoming Pools</Text>
             <View
                 style={{
