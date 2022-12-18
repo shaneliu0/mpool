@@ -1,5 +1,4 @@
 import axios from "axios";
-import * as Logging from '../Logging';
 
 export interface PoolSeasonData {
     id: number;
@@ -29,7 +28,11 @@ export const getPoolSeasons = async (): Promise<PoolSeasonData[]> => {
 export interface PoolSeasonDetails {
     id: number;
     displayTitle: string;
-    destinations: { label: string, value: string, location: { latitude: number, longitude: number } }[];
+    destinations: PoolPlaceCategory[];
+}
+export interface PoolPlaceCategory {
+    category: string;
+    places: PoolPlace[];
 }
 export const defaultPoolSeasonDetails: PoolSeasonDetails = { id: -1, displayTitle: "", destinations: [] };
 export const getPoolSeasonDetails = async (seasonId: number): Promise<PoolSeasonDetails> => {
@@ -38,11 +41,20 @@ export const getPoolSeasonDetails = async (seasonId: number): Promise<PoolSeason
     return (resp.data as PoolSeasonDetails);
 }
 
-interface PoolPlace {
+export interface PoolPlace {
     name: string;
+    id: string;
     coords: {
         latitude: number;
         longitude: number;
+    }
+}
+export const defaultPoolPlace: PoolPlace = {
+    name: "",
+    id: "",
+    coords: {
+        latitude: -1,
+        longitude: -1,
     }
 }
 export interface PoolRequestData {
@@ -56,7 +68,7 @@ export interface PoolRequestData {
     departTime: number;
     from: PoolPlace;
     to: PoolPlace;
-    destinations: { label: string, value: string, location: { latitude: number, longitude: number } }[];
+    destinations: PoolPlaceCategory[];
 }
 export const defaultPoolRequestData: PoolRequestData = {
     requestId: -1,
@@ -66,12 +78,12 @@ export const defaultPoolRequestData: PoolRequestData = {
     createdAt: 0,
     updatedAt: 0,
     departTime: 0,
-    from: { name: "", coords: { latitude: 0, longitude: 0 }},
-    to: { name: "", coords: { latitude: 0, longitude: 0 }},
+    from: defaultPoolPlace,
+    to: defaultPoolPlace,
     destinations: [],
 };
-export const getPoolRequest = async (seasonId: number, requestId: number): Promise<PoolRequestData> => {
-    const resp = await axios.get(`/pool/season/${seasonId}/request/${requestId}`);
+export const getPoolRequest = async (requestId: number): Promise<PoolRequestData> => {
+    const resp = await axios.get(`/pool/request/${requestId}`);
 
     return (resp.data as PoolRequestData);
 }
@@ -88,6 +100,18 @@ export const postPoolRequest = async (seasonId: number, data: SubmitPoolRequestD
     const resp = await axios.post(`/pool/season/${seasonId}`, data);
 
     return (resp.data as SubmitPoolRequestResp);
+}
+
+export interface UpdatePoolRequestData {
+    departDate?: number;
+    fromId?: string;
+    toId?: string;
+}
+export const updatePoolRequest = async (requestId: number, data: UpdatePoolRequestData): Promise<PoolRequestData> => {
+    await axios.put(`/pool/request/${requestId}`, data);
+
+    const newSeason = await getPoolRequest(requestId);
+    return newSeason;
 }
 
 
@@ -114,8 +138,8 @@ export const defaultPoolData: PoolData = {
     status: "potential",
     statusMessage: "",
     departTime: 0,
-    from: { name: "", coords: { latitude: 0, longitude: 0 }},
-    to: { name: "", coords: { latitude: 0, longitude: 0 }},
+    from: defaultPoolPlace,
+    to: defaultPoolPlace,
     members: [],
 }
 export const getPool = async (poolId: number): Promise<PoolData> => {

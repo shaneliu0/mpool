@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, StyleSheet, ScrollView } from 'react-native';
 import Text from '../../components/StyledText';
-import { defaultPoolRequestData, getPoolRequest, PoolRequestData } from '../../dataAccess/poolData';
+import { defaultPoolRequestData, getPoolRequest, PoolPlace, PoolRequestData, updatePoolRequest, UpdatePoolRequestData } from '../../dataAccess/poolData';
 import { RootTabScreenProps } from '../../types';
 import * as Logging from '../../Logging';
 import { BulletList, DoubleText, ExpandableBox, Loading, PositionedMap } from '../../components/Display';
@@ -9,7 +9,7 @@ import { FadeInView } from '../../components/Animation';
 import { AntDesign, MaterialIcons } from '@expo/vector-icons';
 import * as Conversion from '../../constants/Conversion';
 import { GooglePlaceData, GooglePlaceDetail } from 'react-native-google-places-autocomplete';
-import { DateTimeSelector, PlaceInputModal, SingleSelect } from '../../components/Pickers';
+import { DateTimeSelector, FlexiblePlacesSelector, PlaceInputModal, SingleSelect } from '../../components/Pickers';
 import Toast from 'react-native-toast-message';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import StyledButton from '../../components/Button';
@@ -29,13 +29,15 @@ function PoolRequest(props: PoolRequestProps) {
         tmrw.setDate(tmrw.getDate() + 1);
         return tmrw;
     });
-    const [newFrom, setNewFrom] = useState<GooglePlaceData & GooglePlaceDetail | null>(null);
-    const [dest, setDest] = useState<string | undefined>(undefined);
+    const [newFrom, setNewFrom] = useState<PoolPlace | null>(null);
+    const [newTo, setNewTo] = useState<PoolPlace | null>(null);
     const [hasEditedDate, setHasEditedDate] = useState(false);
-    const [hasEditedLoc, setHasEditedLoc] = useState(false);
+    const [hasEditedFrom, setHasEditedFrom] = useState(false);
+    const [hasEditedTo, setHasEditedTo] = useState(false);
+    const [dtsKey, setDtsKey] = useState(0);
     const viewPadding = useSharedValue(0);
 
-
+    
     const onDateChange = (_: any, selectedDate: any) => {
         const currentDate = selectedDate || newDate;
         setHasEditedDate(true);
@@ -45,11 +47,6 @@ function PoolRequest(props: PoolRequestProps) {
     const handleExpandEdit = (eidx: number) => () => {
         if (eidx == editingIdx) return setEditingIdx(-1);
         setEditingIdx(eidx);
-    };
-
-    const onDestChange = (newDest: string) => {
-        setHasEditedLoc(true);
-        setDest(newDest);
     };
 
     const animatedViewStyle = useAnimatedStyle(() => {
@@ -63,20 +60,57 @@ function PoolRequest(props: PoolRequestProps) {
         if (loadingRequest) {
             (async () => {
                 try {
-                    const resp = await getPoolRequest(isid, irid);
+                    const resp = await getPoolRequest(irid);
                     setRequest(resp);
+                    setNewDate(new Date(resp.departTime));
+                    setNewFrom(resp.from);
+                    setNewTo(resp.to);
                     setLoadingRequest(false);
-
-                    setNewDate(new Date(request.createdAt));
-
                 } catch (e) {
                     Logging.Error(e);
                 }
             })();
         }
-    }, [editingIdx])
+    }, [editingIdx]);
 
-    if (loadingRequest) return <Loading shouldCenter defaultDelay />
+    useEffect(() => {
+        if (!hasEditedDate && !hasEditedFrom && !hasEditedTo) return;
+        const updateObj: UpdatePoolRequestData = {};
+
+        if (hasEditedDate) {
+            updateObj.departDate = newDate.getTime();
+        }
+        if (hasEditedTo && newTo) {
+            updateObj.toId = newTo.id;
+        }
+        if (hasEditedFrom && newFrom) {
+            updateObj.fromId = newFrom.id;
+        }
+
+        (async () => {
+            try {
+                const resp = await updatePoolRequest(irid, updateObj);
+                setRequest(resp);
+                setNewDate(new Date(resp.departTime));
+                setNewFrom(resp.from);
+                setNewTo(resp.to);
+                Toast.show({
+                    type: 'success',
+                    text1: 'Saved!',
+                    visibilityTime: 1000,
+                });
+            } catch (error) {
+                Logging.Error(error);
+            } finally {
+                setHasEditedDate(false);
+                setHasEditedFrom(false);
+                setHasEditedTo(false);
+            }
+        })();
+
+    }, [hasEditedDate, hasEditedFrom, hasEditedTo])
+
+    if (loadingRequest) return <Loading shouldCenter defaultDelay />;
     const {
         requestId,
         seasonName,
@@ -96,7 +130,7 @@ function PoolRequest(props: PoolRequestProps) {
 
     return (
         <FadeInView>
-            <ScrollView style={[{ marginBottom: "auto", height: "100%", }, styles.fullWidth]}>
+            <ScrollView style={[{ marginBottom: "auto", height: "100%", }, styles.fullWidth]} keyboardShouldPersistTaps="handled">
                 <Animated.View style={animatedViewStyle}>
                     <Text variant='h1'>{seasonName}</Text>
                     <Text variant='h2'>{statusMessage}</Text>
@@ -115,9 +149,10 @@ function PoolRequest(props: PoolRequestProps) {
                     >
                         <View style={styles.innerPickerView}>
                             <DateTimeSelector
+                                key={dtsKey}
                                 onSelect={onDateChange}
                                 value={newDate}
-                            // minuteInterval={15}
+                                minuteInterval={15}
                             />
                             <Text variant="bodylarge">Edit your depart time.</Text>
                             <BulletList
@@ -144,27 +179,15 @@ function PoolRequest(props: PoolRequestProps) {
                     >
                         <View style={styles.innerPickerView}>
                             <Text variant="bodylarge">Pickup Location</Text>
-                            <View style={{
-                                width: "100%",
-                                paddingHorizontal: 15,
-                                marginVertical: 15,
-                            }}>
-                                <PlaceInputModal
-                                    onSelect={(place, details) => {
-                                        if (!details) {
-                                            return Toast.show({
-                                                type: 'error',
-                                                text1: 'Something went wrong!',
-                                                text2: 'Try selecting a different place',
-                                            })
-                                        }
-                                        setHasEditedLoc(true);
-                                        setNewFrom({ ...place, ...details });
-                                    }}
-                                    fieldText="Select Pickup Location"
-                                    fieldValue={newFrom?.description || ''}
-                                />
-                            </View>
+                            <FlexiblePlacesSelector 
+                                onSelect={(p) => {
+                                    setNewFrom(p);
+                                    setHasEditedFrom(true);
+                                }}
+                                items={request.destinations}
+                                placeholder="Select your departure location"
+                                value={newFrom}
+                            />
                             <Text variant="bodylarge">Select your pickup location.</Text>
                             <BulletList
                                 items={[
@@ -174,11 +197,14 @@ function PoolRequest(props: PoolRequestProps) {
                                 variant="bodylarge"
                             />
                             <Text variant="bodylarge">Destination</Text>
-                            <SingleSelect
-                                selectedValue={dest}
+                            <FlexiblePlacesSelector
+                                onSelect={(p) => {
+                                    setNewTo(p);
+                                    setHasEditedTo(true);
+                                }}
                                 items={request.destinations}
-                                label="Select Option"
-                                onValueChange={onDestChange}
+                                placeholder="Select your destination"
+                                value={newTo}
                             />
                         </View>
                     </ExpandableBox>

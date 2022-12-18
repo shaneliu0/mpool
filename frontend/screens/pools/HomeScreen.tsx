@@ -35,19 +35,29 @@ function HomeFeed(props: PoolSearchProps) {
     const [loadingPoolSeasons, setLoadingPoolSeasons] = useState<boolean>(true);
     const [expandedPoolIdx, setExpandedPoolIdx] = useState(-1);
 
+    const onRefresh = (async () => {
+        try {
+            const resp = await getPoolSeasons();
+            setPoolSeasons(resp);
+            setLoadingPoolSeasons(false);
+        } catch (e) {
+            Logging.Error(e);
+        }
+    });
+
     useEffect(() => {
         if (loadingPoolSeasons) {
-            (async () => {
-                try {
-                    const resp = await getPoolSeasons();
-                    setPoolSeasons(resp);
-                    setLoadingPoolSeasons(false);
-                } catch (e) {
-                    Logging.Error(e);
-                }
-            })();
+            onRefresh();
         }
     }, [loadingPoolSeasons])
+
+    useEffect(() => {
+        const willFocusSub = navigation.addListener('focus', () => {
+            onRefresh();
+        });
+
+        return willFocusSub;
+    }, []);
 
     const handleExpandPool = (poolIdx: number) => () => {
         if (expandedPoolIdx == poolIdx) return setExpandedPoolIdx(-1);

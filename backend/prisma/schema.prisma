@@ -14,10 +14,42 @@ model User {
   userId       String         @id
   email        String         @unique
   displayName  String
+  photoUrl     String
   pools        Pool[]
   requests     PoolRequest[]
   Message      Message[]
   Notification Notification[]
+  Profile      Profile        @relation(fields: [profileId], references: [profileId])
+  profileId    Int
+}
+
+model Profile {
+  profileId   Int              @id @default(autoincrement())
+  userId      String
+  description String
+  initialized Boolean
+  createdAt   DateTime         @default(now())
+  content     ProfileContent[]
+  User        User[]
+}
+
+model ProfileContent {
+  profileContentId Int           @id @default(autoincrement())
+  prompt           Prompt        @relation(fields: [promptId], references: [promptId])
+  promptId         Int
+  text             String?
+  tiles            ContentTile[]
+  Profile          Profile?      @relation(fields: [profileProfileId], references: [profileId])
+  profileProfileId Int?
+}
+
+model ContentTile {
+  contentTileId                  Int             @id @default(autoincrement())
+  content                        String?
+  interest                       Interest?       @relation(fields: [interestId], references: [interestId])
+  interestId                     Int?
+  ProfileContent                 ProfileContent? @relation(fields: [profileContentProfileContentId], references: [profileContentId])
+  profileContentProfileContentId Int?
 }
 
 model Notification {
@@ -34,6 +66,15 @@ model Notification {
 model Pool {
   poolId      Int           @id @default(autoincrement())
   name        String        @db.VarChar(255)
+  season      PoolSeason    @relation(fields: [seasonId], references: [id])
+  seasonId    Int
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  departTime  DateTime?
+  from        Place?         @relation(name: "from", fields: [fromId], references: [placeId])
+  fromId      String?
+  to          Place?         @relation(name: "to", fields: [toId], references: [placeId])
+  toId        String?
   message     Message[]
   users       User[]
   PoolRequest PoolRequest[]
@@ -50,19 +91,29 @@ model Message {
 }
 
 model Place {
-  placeId   Int                                  @id @default(autoincrement())
-  name      String
-  coords    Unsupported("geometry(Point, 3857)")
-  fromPools PoolRequest[]                        @relation("from")
-  toPools   PoolRequest[]                        @relation("to")
+  placeId          String                               @id
+  name             String
+  coords           Unsupported("geometry(Point, 3857)")
+  fromPoolRequests PoolRequest[]                        @relation("from")
+  toPoolRequests   PoolRequest[]                        @relation("to")
+  createdAt        DateTime                             @default(now())
+  updatedAt        DateTime                             @updatedAt
+  University       University?                          @relation(fields: [universityId], references: [universityId])
+  universityId     Int?
+  category         String?
+  fromPools        Pool[]                               @relation("from")
+  toPools          Pool[]                               @relation("to")
 }
 
 model PoolSeason {
-  id          Int           @id @default(autoincrement())
-  name        String        @db.VarChar(255)
-  endsAt      DateTime
-  PoolRequest PoolRequest[]
-  active      Boolean
+  id           Int           @id @default(autoincrement())
+  name         String        @db.VarChar(255)
+  endsAt       DateTime
+  PoolRequest  PoolRequest[]
+  active       Boolean
+  university   University    @relation(fields: [universityId], references: [universityId])
+  universityId Int
+  Pool         Pool[]
 }
 
 model PoolRequest {
@@ -77,22 +128,43 @@ model PoolRequest {
   userId     String
   departTime DateTime
   from       Place      @relation(name: "from", fields: [fromId], references: [placeId])
-  fromId     Int
+  fromId     String
   to         Place      @relation(name: "to", fields: [toId], references: [placeId])
-  toId       Int
+  toId       String
   active     Boolean    @default(true)
 }
 
+model Prompt {
+  promptId         Int              @id @default(autoincrement())
+  name             String
+  allowText        Boolean          @default(true)
+  allowTiles       Boolean          @default(true)
+  restrictTiles    Boolean          @default(false)
+  allowedInterests Interest[]
+  ProfileContent   ProfileContent[]
+}
+
 model Interest {
-  interestId Int              @id @default(autoincrement())
-  name       String
-  emoji      String
-  category   InterestCategory @relation(fields: [categoryId], references: [categoryId])
-  categoryId Int
+  interestId  Int              @id @default(autoincrement())
+  name        String
+  emoji       String
+  category    InterestCategory @relation(fields: [categoryId], references: [categoryId])
+  categoryId  Int
+  Prompt      Prompt?          @relation(fields: [promptId], references: [promptId])
+  promptId    Int?
+  ContentTile ContentTile[]
 }
 
 model InterestCategory {
   categoryId Int        @id @default(autoincrement())
   name       String
   interests  Interest[]
+}
+
+model University {
+  universityId  Int          @id
+  name          String
+  emailDomain   String
+  PoolSeason    PoolSeason[]
+  defaultPlaces Place[]
 }

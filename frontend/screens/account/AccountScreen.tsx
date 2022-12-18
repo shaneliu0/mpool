@@ -1,24 +1,25 @@
 import { Avatar, Input } from 'native-base';
 import React, { useState, useEffect, useContext } from 'react';
 import { Alert, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
-import { FadeInView } from '../components/Animation';
-import StyledButton from '../components/Button';
-import { Loading } from '../components/Display';
+import { FadeInView } from '../../components/Animation';
+import StyledButton from '../../components/Button';
+import { Loading } from '../../components/Display';
 
-import EditScreenInfo from '../components/EditScreenInfo';
-import { PageSheetModal } from '../components/Modal';
-import { View } from '../components/Themed';
-import { defaultContentBlock, defaultProfile, getOwnProfile, getProfileContentPrompts, Profile, ProfileContentBlock, ProfileContentPrompt } from '../dataAccess/users';
-import { ProfileDisplay } from './pools/ProfileViewScreen';
-import Text from '../components/StyledText';
-import { ThemeContext } from '../App';
+import EditScreenInfo from '../../components/EditScreenInfo';
+import { PageSheetModal } from '../../components/Modal';
+import { View } from '../../components/Themed';
+import { defaultContentBlock, defaultProfile, getOwnProfile, getProfileContentPrompts, Profile, ProfileContentBlock, ProfileContentPrompt, saveProfile } from '../../dataAccess/users';
+import { ProfileDisplay } from '../pools/ProfileViewScreen';
+import Text from '../../components/StyledText';
+import { ThemeContext } from '../../App';
 import Animated, { runOnJS, useAnimatedProps, useAnimatedStyle, useSharedValue, withSpring, withTiming, } from 'react-native-reanimated';
 import { BlurView } from 'expo-blur';
-import Button from '../components/Button';
+import Button from '../../components/Button';
 import { useRef } from 'react';
-import { Chip, ChipContainer } from '../components/Chip';
+import { Chip, ChipContainer } from '../../components/Chip';
 import { AntDesign, Ionicons, MaterialIcons } from '@expo/vector-icons';
-import * as Logging from '../Logging';
+import * as Logging from '../../Logging';
+import { Toast } from 'react-native-toast-message/lib/src/Toast';
 
 function capitalizeFirstLetter(str: string) {
   if (!str) return;
@@ -408,7 +409,7 @@ function AddContent(props: AddContentProps) {
   const [promptsOpen, setPromptsOpen] = useState(false);
   const DURATION = 200;
   const BLUR_DURATION = DURATION * 3;
-  const initialPromptsOpacity = 0.7;
+  const initialPromptsOpacity = 0.8;
   const timingOptions = { duration: DURATION };
 
   const handleTextChange = (t: string) => {
@@ -476,8 +477,10 @@ function AddContent(props: AddContentProps) {
     })
   };
   const createEdit = () => {
-    handleAdd(value);
     initiateClose();
+    setTimeout(() => {
+      handleAdd(value);
+    }, BLUR_DURATION);
   }
   const initiateClose = () => {
     handleClose();
@@ -684,13 +687,15 @@ function AddContent(props: AddContentProps) {
 interface EditProfileProps {
   initProfile: Profile;
   onProfileRefresh: () => void;
+  onNewProfile: (newProfile: Profile) => void;
 }
 function EditProfile(props: EditProfileProps) {
-  const { initProfile, onProfileRefresh } = props;
+  const { initProfile, onNewProfile } = props;
   const theme = useContext(ThemeContext);
   const [open, setOpen] = useState(false);
   const [changed, setChanged] = useState(false);
   const [profile, setProfile] = useState(initProfile);
+  const [savingProfile, setSavingProfile] = useState(false);
   const [prompts, setPrompts] = useState<ProfileContentPrompt[] | null>(null);
   const [openContentIdx, setOpenContentIdx] = useState(-1);
   const scrollRef = useRef(null);
@@ -716,19 +721,28 @@ function EditProfile(props: EditProfileProps) {
     setProfile({
       ...profile,
       [k]: newContent,
-    })
+    });
+    setChanged(true);
   };
   const handleEditContent = (idx: number, newContent: ProfileContentBlock) => {
     setProfile({
       ...profile,
       content: editContentAtIdx(profile.content, idx, newContent),
-    })
+    });
+    setChanged(true);
   };
   const handleAddContent = (newContent: ProfileContentBlock) => {
-    setProfile({
-      ...profile,
-      content: [...profile.content, newContent]
-    })
+    const addContent = () => {
+      setProfile({
+        ...profile,
+        content: [...profile.content, newContent]
+      })
+    }
+    contentOpacity.value = withTiming(0, {}, () => {
+      runOnJS(addContent)();
+      contentOpacity.value = withTiming(1);
+    });
+    setChanged(true);
   }
   const handleDeleteBlock = (bidx: number) => () => {
     const spliceAndDelete = () => {
@@ -740,7 +754,48 @@ function EditProfile(props: EditProfileProps) {
     contentOpacity.value = withTiming(0, {}, () => {
       runOnJS(spliceAndDelete)();
       contentOpacity.value = withTiming(1);
-    })
+    });
+    setChanged(true);
+  }
+  const handleSave = async () => {
+    setSavingProfile(true);
+    try {
+      const savedProfile = await saveProfile(profile);
+      setProfile(savedProfile);
+      onNewProfile(savedProfile);
+    } catch (error) {
+      Logging.Error(error);
+    }
+    setSavingProfile(false);
+    setChanged(false);
+    setOpen(false);
+  }
+  const handleReset = async () => {
+    // prompt the user if they are sure they want to reset their progress.
+    Alert.alert(
+      'Reset Profile',
+      'Are you sure you want to reset your changes?',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Reset',
+          style: 'destructive',
+          onPress: async () => {
+            const resetEdits = () => {
+              setProfile(initProfile);
+              setChanged(false);
+            }
+            contentOpacity.value = withTiming(0, {}, () => {
+              runOnJS(resetEdits)();
+              contentOpacity.value = withTiming(1);
+            });
+          }
+        }
+      ]
+    )
   }
 
   let openIdx = 0;
@@ -771,7 +826,7 @@ function EditProfile(props: EditProfileProps) {
   })
 
   useEffect(() => {
-    if (open) setProfile(initProfile);
+    // if (open) setProfile(initProfile);
     if (open && !prompts) {
       (async () => {
         try {
@@ -784,10 +839,6 @@ function EditProfile(props: EditProfileProps) {
     }
   }, [open]);
 
-  useEffect(() => {
-    // save the profile whenever profile is changed.
-  }, [profile]);
-
   const {
     photoUrl,
   } = initProfile;
@@ -799,22 +850,62 @@ function EditProfile(props: EditProfileProps) {
         open={open}
         title="Edit Profile"
         onClose={handleClose}
+        altAction={(() => {
+          if (!changed) return undefined;
+          return {
+            text: "Save",
+            loadingText: "Saving...",
+            loading: savingProfile,
+            action: () => {
+              handleSave();
+            }
+          }
+        })()}
       >
         <ScrollView style={{ height: "100%", }} ref={scrollRef}>
           <Animated.View style={[animatedContentViewStyle, { marginBottom: somethingOpen ? 400 : 200, }]}>
-            <View style={{
-              width: "100%",
-              height: 200,
-              flex: 1,
-              alignItems: "center",
-              justifyContent: "center",
-            }}>
-              <Avatar
-                source={{
-                  uri: photoUrl,
+            <View
+              style={{
+                width: "100%",
+                height: 200,
+                flex: 1,
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <TouchableOpacity
+                onPress={() => {
+                  Alert.alert('Your profile image and name are synced with your Google account. If you changed it recently, it will update here after 24-48 hours.')
                 }}
-                size="20"
-              />
+              >
+                <Avatar
+                  source={{
+                    uri: photoUrl,
+                  }}
+                  size="20"
+                />
+              </TouchableOpacity>
+            </View>
+            <View style={{
+              flex: 1,
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "space-between",
+            }}>
+              {changed && (
+                <TouchableOpacity
+                  style={{
+                    margin: 15,
+                    marginLeft: 35,
+                    marginTop: -50,
+                    width: 35,
+                  }}
+                  onPress={handleReset}
+                >
+                  <MaterialIcons name="undo" size={24} color="black" />
+                </TouchableOpacity>
+              )}
+              <View></View>
             </View>
             <EditableKey
               profileKey="description"
@@ -851,15 +942,39 @@ function EditProfile(props: EditProfileProps) {
 export default function AccountScreen() {
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState<Profile>(defaultProfile);
+  const DURATION = 200;
+  const timingOptions = { duration: DURATION };
 
   const handleProfileRefresh = () => setLoading(true);
+
+  const handleNewProfile = (profile: Profile) => {
+    const setNewProfile = () => {
+      setProfile(profile);
+    }
+    profileOpacity.value = withTiming(0, timingOptions, () => {
+      runOnJS(setNewProfile)();
+      profileOpacity.value = withTiming(1, timingOptions);
+    });
+  }
+
+  const profileOpacity = useSharedValue(1);
+
+  const animatedProfileOpacity = useAnimatedStyle(() => {
+    return {
+      opacity: withSpring(profileOpacity.value),
+    }
+  })
 
   useEffect(() => {
     if (loading) {
       (async () => {
-        const resp = await getOwnProfile();
-        setProfile(resp);
-        setLoading(false);
+        try {
+          const resp = await getOwnProfile();
+          setProfile(resp);
+          setLoading(false);
+        } catch (error) {
+          Logging.Error(error);
+        }
       })();
     }
   }, [loading]);
@@ -872,9 +987,11 @@ export default function AccountScreen() {
         marginBottom: "auto",
         height: "100%",
       }}>
-        <ProfileDisplay {...profile} />
+        <Animated.View style={animatedProfileOpacity}>
+          <ProfileDisplay {...profile} />
+        </Animated.View>
       </ScrollView>
-      <EditProfile initProfile={profile} onProfileRefresh={handleProfileRefresh} />
+      <EditProfile initProfile={profile} onProfileRefresh={handleProfileRefresh} onNewProfile={handleNewProfile} />
     </FadeInView>
   );
 }

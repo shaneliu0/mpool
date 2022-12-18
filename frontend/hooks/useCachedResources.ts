@@ -30,18 +30,19 @@ export default function useCachedResources() {
                 const idToken = await user.getIdToken(true);
 
                 setInterval(async () => {
-                  axios.defaults.headers.common['Authorization'] = await user.getIdToken(true);
+                  axios.defaults.headers.common['Authorization'] =  "Bearer " + await user.getIdToken(true);
                   console.log('Refreshed auth token!');
                 }, 60 * 60 * 1000)
                 console.log(idToken);
-                axios.defaults.headers.common['Authorization'] = idToken;
+                axios.defaults.headers.common['Authorization'] = "Bearer " + idToken;
                 dispatch(setAuth({
                   displayName: user.displayName,
                   email: user.email,
                   photoURL: user.photoURL,
                   uid: user.uid
                 }));
-                
+                await axios.get('/user/updatevalidate');
+
                 resolve();
               })();
             } else {

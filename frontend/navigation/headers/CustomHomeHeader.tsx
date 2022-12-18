@@ -4,7 +4,7 @@ import { useNavigation } from '@react-navigation/core';
 // import Text from '../components/StyledText';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { RootTabScreenProps } from '../types';
+import { RootTabScreenProps } from '../../types';
 
 function CustomHomeHeader() {
     const navigation = useNavigation();

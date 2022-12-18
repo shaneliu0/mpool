@@ -18,6 +18,7 @@ export const defaultProfile: Profile = {
     description: "",
     content: [],
 }
+export const defaultContentBlock = { heading: "", promptId: -1 };
 export async function getProfile(userId: string): Promise<Profile> {
     const resp = await axios.get(`/user/${userId}/profile`);
     return (resp.data as Profile);
@@ -34,4 +35,9 @@ export interface ProfileContentPrompt {
 export async function getProfileContentPrompts() {
     const resp = await axios.get('/user/profile/edit/prompts');
     return (resp.data as ProfileContentPrompt[]);
+}
+
+export async function saveProfile(newProfile: Profile) {
+    const resp = await axios.post('/user/profile', newProfile);
+    return (resp.data as Profile);
 }

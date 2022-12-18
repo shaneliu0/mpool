@@ -43,10 +43,11 @@ const waitForThreeSeconds = () => {
 
 async function decodeUserToken(req: any, res: any, next: any) {
     if (!req.headers.authorization) return next();
+    const [_, token] = req.headers.authorization.split(' ');
     try {
         req.user = await admin
             .auth()
-            .verifyIdToken(req.headers.authorization);
+            .verifyIdToken(token);
         next();
     } catch (e) {
         return res.status(403).json({ error: "Error Authenticating!" })

@@ -56,6 +56,11 @@ export type ChatParamList = {
   ProfileView: undefined;
 }
 
+export type AccountParamList = {
+  Account: undefined;
+  AccountSettings: undefined;
+}
+
 // begin non-navigation types
 
 export interface PoolSearchQuery {

@@ -7,6 +7,7 @@ import { Loading } from "../../components/Display";
 import Text from "../../components/StyledText";
 import { defaultProfile, getProfile, Profile, ProfileContentBlock as ProfileContentBlockProps } from "../../dataAccess/users";
 import { RootTabScreenProps } from "../../types";
+import * as Logging from '../../Logging';
 
 function ProfileContentBlock(props: ProfileContentBlockProps) {
     const {
@@ -97,10 +98,14 @@ function ProfileViewScreen({ route, navigation }: RootTabScreenProps<'Pool'>) {
     useEffect(() => {
         if (loading) {
             (async () => {
-                const resp = await getProfile((route.params as any).userId);
+                try {
+                    const resp = await getProfile((route.params as any).userId);
 
-                setProfile(resp);
-                setLoading(false);
+                    setProfile(resp);
+                    setLoading(false);
+                } catch (error) {
+                    Logging.Error(error);
+                }
             })();
         }
     }, []);

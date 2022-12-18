@@ -1,13 +1,12 @@
 import React, { useContext, useEffect, useState } from 'react';
 import { View, StyleSheet, Modal, useColorScheme, ScrollView, ViewPagerAndroidBase, Alert } from 'react-native';
 import { RootTabScreenProps } from '../../types';
-import Toast from 'react-native-toast-message';
 
 import Text from '../../components/StyledText';
-import { defaultPoolSeasonDetails, getPoolSeasonDetails, PoolSeasonDetails, postPoolRequest } from '../../dataAccess/poolData';
+import { PoolPlace, defaultPoolPlace, defaultPoolSeasonDetails, getPoolSeasonDetails, PoolSeasonDetails, postPoolRequest } from '../../dataAccess/poolData';
 import { DoubleText, ExpandableBox, BulletList, Loading, PositionedMap } from '../../components/Display';
 import { AntDesign, MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons';
-import { DateTimeSelector, PlaceInputModal, PlacesSelector, SingleSelect } from '../../components/Pickers';
+import { DateTimeSelector, FlexiblePlacesSelector, PlaceInputModal, PlacesSelector, SingleSelect } from '../../components/Pickers';
 import { Heading, HStack, IconButton, Input } from 'native-base';
 import { GooglePlaceData, GooglePlaceDetail } from 'react-native-google-places-autocomplete';
 import { ThemeContext } from '../../App';
@@ -40,8 +39,8 @@ export default function PoolRequestCreationScreen({ route, navigation }: RootTab
     const [poolSeasonDetails, setPoolSeasonDetails] = useState<PoolSeasonDetails>(defaultPoolSeasonDetails);
     const [hasSelectedDate, setHasSelectedDate] = useState(false);
     const [expandedPickerId, setExpandedPickerId] = useState(-1);
-    const [location, setLocation] = useState<GooglePlaceData & GooglePlaceDetail | null>(null);
-    const [dest, setDest] = useState<string | undefined>(undefined);
+    const [from, setFrom] = useState<PoolPlace | null>(null);
+    const [to, setTo] = useState<PoolPlace | null>(null);
     const [date, setDate] = useState(() => {
         const tmrw = new Date();
         tmrw.setDate(tmrw.getDate() + 1);
@@ -77,17 +76,17 @@ export default function PoolRequestCreationScreen({ route, navigation }: RootTab
     const handleSubmit = async () => {
         setSubmitting(true);
         try {
-            if (!location || !hasSelectedDate || !dest) return Alert.alert("Please fill out all fields.");
+            if (!hasSelectedDate || !from || !to) return Alert.alert("Please fill out all fields.");
             const resp = await postPoolRequest(seasonId, {
                 departDate: date.getTime(),
-                fromId: location?.place_id,
-                toId: dest,
+                fromId: from.id,
+                toId: to.id,
             });
             navigation.navigate('Pool', {
                 screen: 'PoolRequestView',
                 params: { requestId: resp.requestId, seasonId: seasonId }
             } as never);
-        } catch (e) {
+        } catch (e: any) {
             Logging.Error(e);
         } finally {
             setSubmitting(false);
@@ -105,17 +104,12 @@ export default function PoolRequestCreationScreen({ route, navigation }: RootTab
         setDate(currentDate);
     };
 
-    const onDestChange = (newDest: string) => {
-        setDest(newDest);
-    };
-
     if (loadingPoolDetails) return <Loading shouldCenter defaultDelay />
 
-    const destObj = dest && poolSeasonDetails.destinations.find(e => e.value === dest);
-    const locationsSelected = !!(location && dest && destObj);
+    const locationsSelected = !!(to && from);
     return (
         <FadeInView>
-            <ScrollView style={[{ marginBottom: "auto", height: "100%", }, styles.fullWidth]}>
+            <ScrollView style={[{ marginBottom: "auto", height: "100%", }, styles.fullWidth]} keyboardShouldPersistTaps="handled">
                 <View style={{ paddingBottom: 150 }}>
                     <Text variant="h1">{displayTitle}</Text>
                     <Text variant="h2">You're creating a new pool request.</Text>
@@ -151,8 +145,8 @@ export default function PoolRequestCreationScreen({ route, navigation }: RootTab
                         head={
                             <DoubleText
                                 icon={<MaterialIcons name="place" size={35} color="black" />}
-                                top={locationsSelected ? `From: ${location.structured_formatting.main_text}` : PLACE_FROM_PLACEHOLD}
-                                bottom={locationsSelected ? `To: ${Conversion.removeInParentheses(destObj?.label || "")}` : PLACE_TO_PLACEHOLD}
+                                top={locationsSelected ? `From: ${from.name}` : PLACE_FROM_PLACEHOLD}
+                                bottom={locationsSelected ? `To: ${Conversion.removeInParentheses(to.name)}` : PLACE_TO_PLACEHOLD}
                             />
                         }
                         expanded={placePickerId === expandedPickerId}
@@ -161,26 +155,12 @@ export default function PoolRequestCreationScreen({ route, navigation }: RootTab
                     >
                         <View style={styles.innerPickerView}>
                             <Text variant="bodylarge">Pickup Location</Text>
-                            <View style={{
-                                width: "100%",
-                                paddingHorizontal: 15,
-                                marginVertical: 15,
-                            }}>
-                                <PlaceInputModal
-                                    onSelect={(place, details) => {
-                                        if (!details) {
-                                            return Toast.show({
-                                                type: 'error',
-                                                text1: 'Something went wrong!',
-                                                text2: 'Try selecting a different place',
-                                            })
-                                        }
-                                        setLocation({ ...place, ...details });
-                                    }}
-                                    fieldText="Select Pickup Location"
-                                    fieldValue={location?.description || ''}
-                                />
-                            </View>
+                            <FlexiblePlacesSelector 
+                                onSelect={setFrom}
+                                items={destinations}
+                                placeholder="Select your departure location"
+                                value={from}
+                            />
                             <Text variant="bodylarge">Select your pickup location.</Text>
                             <BulletList
                                 items={[
@@ -190,11 +170,17 @@ export default function PoolRequestCreationScreen({ route, navigation }: RootTab
                                 variant="bodylarge"
                             />
                             <Text variant="bodylarge">Destination</Text>
-                            <SingleSelect
+                            {/* <SingleSelect
                                 selectedValue={dest}
                                 items={destinations}
                                 label="Select Option"
                                 onValueChange={onDestChange}
+                            /> */}
+                            <FlexiblePlacesSelector
+                                onSelect={setTo}
+                                items={destinations}
+                                placeholder="Select your destination"
+                                value={to}
                             />
                         </View>
                     </ExpandableBox>
@@ -208,12 +194,12 @@ export default function PoolRequestCreationScreen({ route, navigation }: RootTab
                 >
                     {(() => {
                         if (!locationsSelected) return null;
-                        const { lat, lng } = location.geometry.location;
-                        const { latitude, longitude } = destObj.location;
+                        const { latitude: flat, longitude: flng } = from.coords;
+                        const { latitude: tlat, longitude: tlng } = to.coords;
                         return (
                             <PositionedMap
-                                fromCoords={{ latitude: lat, longitude: lng }}
-                                toCoords={{ latitude: latitude, longitude: longitude }}
+                                fromCoords={{ latitude: flat, longitude: flng }}
+                                toCoords={{ latitude: tlat, longitude: tlng }}
                             />
                         );
                     })()}

@@ -19,6 +19,7 @@ import { RootTabScreenProps, AvailableChat } from '../../types';
 import { Entypo } from '@expo/vector-icons';
 import axios from 'axios';
 import * as Logging from '../../Logging';
+import { ChatEmpty } from '../../components/Empties';
 
 interface ChatContainerProps {
   chat: AvailableChat;
@@ -27,7 +28,7 @@ interface ChatContainerProps {
 }
 
 function ChatContainer(props: ChatContainerProps) {
-  const { chat, onPress, loading } = props;
+  const { chat, onPress, loading, } = props;
   const { id, name, lastMessage, lastMessageTime, avatars } = chat;
   const fadeAnim = React.useRef(new Animated.Value(0)).current;
 
@@ -43,7 +44,7 @@ function ChatContainer(props: ChatContainerProps) {
     if (!loading) {
       fadeIn();
     }
-  })
+  }, [loading])
 
   const renderAvatars = () => {
     return avatars && avatars.map((data, idx) => {
@@ -135,10 +136,16 @@ export default function Chats({ route, navigation }: RootTabScreenProps<'Chat'>)
   useEffect(() => {
     onRefresh();
     setRefreshing(false);
+
+    const willFocusSub = navigation.addListener('focus', () => {
+        onRefresh(false);
+    });
+
+    return willFocusSub;
   }, []);
 
-  const onRefresh = React.useCallback(async () => {
-    setRefreshing(true);
+  const onRefresh = React.useCallback(async (shouldSetRefresh=true) => {
+    shouldSetRefresh && setRefreshing(true);
     try {
       const { data } = await axios.get('/chat');
       setChats(data);
@@ -146,21 +153,26 @@ export default function Chats({ route, navigation }: RootTabScreenProps<'Chat'>)
     } catch (error) {
       Logging.Error(error);
     }
-    setRefreshing(false);
+    shouldSetRefresh && setRefreshing(false);
   }, [])
 
   const renderChats = () => {
-    const arr = chats.length > 0 ? chats : new Array(6).fill({});
+    const arr = (!loading) ? chats : new Array(6).fill({});
+
+    if (!arr.length) {
+      return (
+        <ChatEmpty />
+      )
+    }
 
     return arr.map((chat, index) => {
       return <ChatContainer key={index} loading={loading} chat={chat} onPress={() => {
-        // @ts-ignore
         navigation.navigate('Chat', {
           screen: 'SpecificChat',
           params: {
             chatId: chat.id
           }
-        })
+        } as never)
       }} />
     })
   }

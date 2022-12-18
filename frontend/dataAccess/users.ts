@@ -36,3 +36,8 @@ export async function getProfileContentPrompts() {
     const resp = await axios.get('/user/profile/edit/prompts');
     return (resp.data as ProfileContentPrompt[]);
 }
+
+export async function saveProfile(newProfile: Profile) {
+    const resp = await axios.post('/user/profile', newProfile);
+    return (resp.data as Profile);
+}

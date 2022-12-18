@@ -14,7 +14,7 @@ import Colors from '../constants/Colors';
 import useColorScheme from '../hooks/useColorScheme';
 import ModalScreen from '../screens/ModalScreen';
 
-import { RootStackParamList, RootTabParamList, RootTabScreenProps, PoolParamList, Pool, ChatParamList, SignInStackParamList } from '../types';
+import { RootStackParamList, RootTabParamList, RootTabScreenProps, PoolParamList, Pool, ChatParamList, SignInStackParamList, AccountParamList } from '../types';
 import LinkingConfiguration from './LinkingConfiguration';
 
 // start screen imports
@@ -33,11 +33,13 @@ import SpecficChatScreen from '../screens/chat/SpecificChatScreen';
 
 import SignInScreen from '../screens/SignInScreen';
 
-import AccountScreen from '../screens/AccountScreen';
+import AccountScreen from '../screens/account/AccountScreen';
 
 import { useDispatch, useSelector } from 'react-redux';
 
-import CustomHomeHeader from './CustomHomeHeader';
+import CustomHomeHeader from './headers/CustomHomeHeader';
+import CustomAccountHeader from './headers/CustomAccountHeader';
+import AccountSettings from '../screens/account/AccountSettingsScreen';
 
 export default function Navigation({ colorScheme }: { colorScheme: ColorSchemeName }) {
   const user = useSelector((state: any) => state.auth.user);
@@ -110,14 +112,27 @@ function BottomTabNavigator() {
       />
       <BottomTab.Screen
         name="Account"
-        component={AccountScreen}
+        component={AccountNavigator}
         options={{
-          title: 'Account',
+          headerShown: false,
           tabBarIcon: ({ color }) => <TabBarIcon name="code" color={color} />,
         }}
       />
     </BottomTab.Navigator>
   );
+}
+
+const AccountStack = createNativeStackNavigator<AccountParamList>();
+
+function AccountNavigator() {
+  return (
+    <AccountStack.Navigator
+      initialRouteName='Account'
+    >
+      <AccountStack.Screen name="Account" component={AccountScreen} options={{ headerRight: () => <CustomAccountHeader />, }} />
+      <AccountStack.Screen name="AccountSettings" component={AccountSettings} options={{ title: "Settings" }} />
+    </AccountStack.Navigator>
+  )
 }
 
 const ChatStack = createNativeStackNavigator<ChatParamList>();

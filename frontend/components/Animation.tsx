@@ -1,13 +1,15 @@
 import React, { useEffect } from 'react';
-import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
+import { StyleProp, View, ViewStyle } from 'react-native';
+import Animated, { AnimateStyle, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 
 
 interface FadeInViewProps {
     show?: boolean;
+    style?: AnimateStyle<ViewStyle>;
     children: React.ReactNode;
 }
 export function FadeInView(props: FadeInViewProps) {
-    const { show, children } = props;
+    const { show, children, style } = props;
     const opacity = useSharedValue(0);
     const cshow = show === undefined ? true : show;
 
@@ -23,7 +25,7 @@ export function FadeInView(props: FadeInViewProps) {
 
     return (
         <Animated.View
-            style={animatedViewStyle}
+            style={[animatedViewStyle, style]}
         >
             {children}
         </Animated.View>

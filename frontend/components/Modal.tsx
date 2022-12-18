@@ -5,13 +5,21 @@ import React, { useContext } from "react";
 import { Modal, StyleSheet, View } from 'react-native';
 import { ThemeContext } from "../App";
 import { TextButton } from "./Button";
+import { Loading } from "./Display";
 import Text from "./StyledText";
 
+interface AlternateAction {
+    text: string;
+    loadingText: string;
+    action: () => void;
+    loading: boolean;
+}
 interface PageSheetModalProps {
     children: React.ReactNode;
     open: boolean;
     title: string;
     onClose: () => void;
+    altAction?: AlternateAction;
 }
 export function PageSheetModal(props: PageSheetModalProps) {
     const {
@@ -19,6 +27,7 @@ export function PageSheetModal(props: PageSheetModalProps) {
         onClose,
         open,
         title,
+        altAction
     } = props;
 
     const handleClose = () => onClose && onClose();
@@ -40,7 +49,18 @@ export function PageSheetModal(props: PageSheetModalProps) {
             }}>
                 <View></View>
                 <Text variant="subtitle" style={{ fontSize: 20, }}>{title}</Text>
-                <TextButton onPress={handleClose}>Done</TextButton>
+                {(() => {
+                    if (altAction && altAction.loading) {
+                        return <TextButton onPress={altAction.action}>{altAction.loadingText}</TextButton>
+                    }
+                    if (altAction && !altAction.loading) {
+                        return <TextButton onPress={altAction.action}>{altAction.text}</TextButton>
+                    }
+
+                    return (
+                        <TextButton onPress={handleClose}>Done</TextButton>
+                    )
+                })()}
             </View>
             <View>
                 {children}

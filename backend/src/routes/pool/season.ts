@@ -1,6 +1,9 @@
 import express from 'express';
 import { resError } from '../../logging';
 import { PoolRequestData, PoolSeasonData, PoolSeasonDetails, SubmitPoolRequestResp } from '../../types/dataAccess/poolData';
+import moment from 'moment';
+import { getSeasonDestinations, updatePlace } from '../../placeAccess';
+import { removeTextInParenthesis } from '../../formatHelpers';
 
 const prisma = global.prisma;
 
@@ -9,31 +12,8 @@ const router = express.Router();
 /**
  * Get the home page of seasons
  */
-router.get('/', async (req, res) => {
+router.get('/', async (req:any, res) => {
     const { user } = req;
-
-    return res.json([
-        {
-            id: 1,
-            name: "Thanksgiving Break 2022",
-            collapsedBodyText: "You have an outgoing request for Nov 24th...",
-            expandedBodyText: "Outgoing request to arrive at McNamara terminal on Wednesday, November 24th at 7pm.",
-            requestId: 1,
-        },
-        {
-            id: 2,
-            name: "Winter Break 2022",
-            collapsedBodyText: "Your request for Dec 24th has been fulfilled...",
-            expandedBodyText: "Fulfilled request to arrive at McNamara terminal on Wednesday, November 24th at 7pm.",
-            poolId: 1,
-        },
-        {
-            id: 3,
-            name: "Spring Break 2023",
-            collapsedBodyText: "You haven't created a request for this yet...",
-            expandedBodyText: "You haven't created a request for this season yet. Create a request and this will update.",
-        },
-    ] as PoolSeasonData[]);
 
     try {
         const activePools = await prisma.poolSeason.findMany({
@@ -44,14 +24,50 @@ router.get('/', async (req, res) => {
                 PoolRequest: {
                     where: {
                         userId: user.uid,
+                    },
+                    include: {
+                        pool: true,
+                        from: true,
+                        to: true,
                     }
-                }
+                },
             }
         });
 
+        return res.json(activePools.map(p => {
+            let collapsedBodyText = "";
+            let expandedBodyText = "";
+            let poolId;
+            let requestId;
 
+            if (p.PoolRequest.length) {
+                const poolReq = p.PoolRequest[0];
+                
+                const departDate = moment(poolReq.departTime).format("MMM Do");
 
-        return res.json(activePools);
+                if (poolReq.pool) {
+                    poolId = poolReq.pool.poolId;
+                    collapsedBodyText = `Your request for ${departDate} has been fulfilled...`;
+                    expandedBodyText = `Fulfilled request to arrive at ${removeTextInParenthesis(poolReq.to.name)} on ${departDate} at ${moment(poolReq.departTime).format("h:mm a")}.`;
+                } else {
+                    requestId = poolReq.requestId;
+                    collapsedBodyText = `You have an outgoing request for ${departDate}...`;
+                    expandedBodyText = `Outgoing request to arrive at ${removeTextInParenthesis(poolReq.to.name)} on ${departDate} at ${moment(poolReq.departTime).format("h:mm a")}.`;
+                }
+            } else {
+                collapsedBodyText = `You haven't created a request for this yet...`;
+                expandedBodyText = `You haven't created a request for this season yet. Create a request and this will update.`;
+            }
+
+            return {
+                id: p.id,
+                name: p.name,
+                collapsedBodyText,
+                expandedBodyText,
+                poolId,
+                requestId
+            };
+        }) as PoolSeasonData[]);
     } catch (e) {
         console.error(e);
         return res.status(500).json({ error: "Something went wrong" });
@@ -61,35 +77,33 @@ router.get('/', async (req, res) => {
 router.get('/:seasonId', async (req, res) => {
     const { user } = req;
     const { seasonId } = req.params;
-
-    return res.json({
-        id: 1,
-        displayTitle: "Thanksgiving Break",
-        destinations: [
-            { label: "McNamara Terminal (AirFrance/Delta)", value: "mcnamara", location: { latitude: 42.225809, longitude: -83.348700 } },
-            { label: "North Terminal (all other airlines)", value: "north", location: { latitude: 42.208432, longitude: -83.355737 }},
-        ]
-    } as PoolSeasonDetails);
     
     try {
-        
+        const sid = parseInt(seasonId);
+        if (isNaN(sid)) return res.status(403).json({ error: "Bad season id formatting" });
+        const sdata = await prisma.poolSeason.findFirstOrThrow({
+            where: {
+                id: sid,
+            },
+        });
+
+        const dests = await getSeasonDestinations(sid);
+
+        return res.json({
+            id: sdata.id,
+            displayTitle: sdata.name,
+            destinations: dests,
+        } as PoolSeasonDetails)
     } catch (e) {
         console.error(e);
         return res.status(500).json({ error: "Something went wrong!" });
     }
 });
 
-/**
- * Set pool request for a season.
- */
 router.post('/:seasonId', async (req, res) => {
     const { user } = req;
     const { seasonId } = req.params;
     const { departDate, fromId, toId } = req.body;
-
-    return res.json({
-        requestId: 1
-    } as SubmitPoolRequestResp)
 
     try {
         const sid = parseInt(seasonId);
@@ -102,10 +116,12 @@ router.post('/:seasonId', async (req, res) => {
                 seasonId: sid,
             }
         });
-        if (checkDup) return res.status(403).json({ error: "Invalid season id" });
-        
+        if (checkDup) return res.status(403).json({ error: "Duplicate request!" });
 
-        await prisma.poolRequest.create({
+        await updatePlace(fromId);
+        await updatePlace(toId);
+        
+        const newRequest = await prisma.poolRequest.create({
             data: {
                 departTime: new Date(departDate),
                 season: { connect: { id: sid } },
@@ -115,40 +131,9 @@ router.post('/:seasonId', async (req, res) => {
             }
         });
 
-        return res.status(200).json({ status: "OK" });        
-    } catch (e) {
-        return resError(res, e);
-    }
-});
-
-router.get('/:seasonId/request/:requestId', async (req, res) => {
-    const { user } = req;
-    const { seasonId, requestId } = req.params;
-
-    return res.json({
-        requestId: 1,
-        seasonName: "Thanksgiving Break",
-        seasonId: 1,
-        statusMessage: "You created a pool request just now.",
-        createdAt: Date.now(),
-        updatedAt: Date.now(),
-        departTime: Date.now(),
-        from: {
-            name: "University Towers",
-            coords: { latitude: 42.27524219999999, longitude: -83.73333939999999 }
-        },
-        to: {
-            name: "McNamara Terminal",
-            coords: { latitude: 42.225809, longitude: -83.3487 }
-        },
-        destinations: [
-            { label: "McNamara Terminal (AirFrance/Delta)", value: "mcnamara", location: { latitude: 42.225809, longitude: -83.348700 } },
-            { label: "North Terminal (all other airlines)", value: "north", location: { latitude: 42.208432, longitude: -83.355737 }},
-        ],
-    } as PoolRequestData);
-
-    try {
-        
+        return res.json({
+            requestId: newRequest.requestId
+        } as SubmitPoolRequestResp);
     } catch (e) {
         return resError(res, e);
     }
