@@ -141,7 +141,7 @@ function PotentialPool(props: PotentialPoolProps) {
                         autoPlay
                         loop={false}
                         ref={animation}
-                        source={require('../../lottie/confirmationCheck.json')}
+                        source={require('../../assets/lottie/confirmationCheck.json')}
                     />
                 </View>
                 <View style={{

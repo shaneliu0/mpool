@@ -21,8 +21,8 @@ function PoolMatched(props: Notification & NotificationProps) {
     const handlePress = () => {
         try {
             navigation.navigate('Pool', {
-                screen: "PoolScreen",
-                params: { poolId: payload.poolId }
+                screen: "MatchedPoolScreen",
+                params: { matchId: payload.matchId }
             } as never)
         } catch (e) {
             Logging.Error(e);

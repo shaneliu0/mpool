@@ -3,7 +3,7 @@ import { View, StyleSheet, Modal, useColorScheme, ScrollView, ViewPagerAndroidBa
 import { RootTabScreenProps } from '../../types';
 
 import Text from '../../components/StyledText';
-import { PoolPlace, defaultPoolPlace, defaultPoolSeasonDetails, getPoolSeasonDetails, PoolSeasonDetails, postPoolRequest } from '../../dataAccess/poolData';
+import { PoolPlace, defaultPoolPlace, defaultPoolSeasonDetails, getPoolSeasonDetails, PoolSeasonDetails, postPoolRequest, validatePoolRequest } from '../../dataAccess/poolData';
 import { DoubleText, ExpandableBox, BulletList, Loading, PositionedMap } from '../../components/Display';
 import { AntDesign, MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons';
 import { DateTimeSelector, FlexiblePlacesSelector, PlaceInputModal, PlacesSelector, SingleSelect } from '../../components/Pickers';
@@ -77,6 +77,12 @@ export default function PoolRequestCreationScreen({ route, navigation }: RootTab
         setSubmitting(true);
         try {
             if (!hasSelectedDate || !from || !to) return Alert.alert("Please fill out all fields.");
+            const valResp = await validatePoolRequest(seasonId, {
+                departDate: date.getTime(),
+                fromId: from.id,
+                toId: to.id,
+            });
+            if (valResp.errorMsg) return Alert.alert(valResp.errorMsg);
             const resp = await postPoolRequest(seasonId, {
                 departDate: date.getTime(),
                 fromId: from.id,

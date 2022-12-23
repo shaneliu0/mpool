@@ -2,8 +2,8 @@ import express from "express";
 import moment from "moment";
 import { removeTextInParenthesis } from "../../formatHelpers";
 import { resError } from "../../logging";
-import { getSeasonDestinations, getLatLngs, updatePlace } from "../../placeAccess";
-import { PoolRequestData, UpdatePoolRequestData } from "../../types/dataAccess/poolData";
+import { getSeasonDestinations, getLatLngs, updatePlace, placeCatEnum } from "../../placeAccess";
+import { PoolRequestData, UpdatePoolRequestData, ValidateUpdatePoolRequestResp } from "../../types/dataAccess/poolData";
 
 const router = express.Router();
 
@@ -85,6 +85,56 @@ router.put('/:requestId', async (req, res) => {
         return res.sendStatus(200);
     } catch (e) {
         resError(res, e);
+    }
+});
+
+router.post('/:requestId/validate', async (req, res) => {
+    const { user } = req;
+    const { requestId } = req.params;
+    const { departDate, fromId, toId } = (req.body as UpdatePoolRequestData)
+
+    try {
+        const rid = parseInt(requestId);
+
+        if (fromId) await updatePlace(fromId);
+        if (toId) await updatePlace(toId);
+
+        let newFrom;
+        if (fromId) {
+            newFrom = await prisma.place.findFirst({
+                where: {
+                    placeId: fromId,
+                }
+            });
+        }
+        let newTo;
+        if (toId) {
+            newTo = await prisma.place.findFirst({
+                where: {
+                    placeId: toId,
+                }
+            });
+        }
+
+        const originalRequest = await prisma.poolRequest.findFirstOrThrow({
+            where: { requestId: rid },
+            include: {
+                from: true,
+                to: true,
+            }
+        });
+
+        const newFromCategory = newFrom?.category || originalRequest.from.category;
+        const newToCategory = newTo?.category || originalRequest.to.category;
+
+        if (![newFromCategory, newToCategory].includes(placeCatEnum.airport_terminal)) {
+            return res.json({
+                errorMsg: "Couldn't save: Either pickup or destination location must be an airport terminal. Change the other location and it will save."
+            } as ValidateUpdatePoolRequestResp);
+        }
+        return res.json({} as ValidateUpdatePoolRequestResp);
+    } catch (error) {
+        resError(res, error);
     }
 });
 

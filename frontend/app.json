@@ -1,14 +1,14 @@
 {
   "expo": {
     "name": "mpool",
-    "slug": "your-firebase-project",
+    "slug": "mpool",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./assets/images/icongraphic.png",
     "scheme": "myapp",
-    "userInterfaceStyle": "automatic",
+    "userInterfaceStyle": "light",
     "splash": {
-      "image": "./assets/images/splash.png",
+      "image": "./assets/images/iconsplash.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },

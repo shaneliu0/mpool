@@ -41,9 +41,13 @@ async function retrieveUserPhotoURLs(poolId: number) {
     const users = await prisma.pool.findUniqueOrThrow({
         where: { poolId: poolId },
         include: {
-            users: true,
+            PoolRequest: {
+                include: {
+                    user: true
+                }
+            }
         }
-    }).then(pool => pool.users);
+    }).then(pool => pool.PoolRequest.map(pr => pr.user));
     const photoUrls = await Promise.all(users.map(u => auth.getUser(u.userId)));
     return photoUrls;
 }
@@ -65,16 +69,16 @@ function truncateMessage(message: string | undefined, length: number) {
 }
 
 // get the chats that the user has available to them, including the most recent sent message.
-router.get('/', async (req, res) => {
+router.get('/', async (req:any, res) => {
     const { user } = req;
     const { offset } = req.query;
 
     try {
         const availablePools = await prisma.pool.findMany({
             include: {
-                users: {
+                PoolRequest: {
                     where: {
-                        userId: user.uid
+                        userId: user.userId
                     }
                 },
                 message: {
@@ -112,7 +116,7 @@ router.get('/', async (req, res) => {
 
 // query params: offset: start @message id
 // returns up to 20 most recent chat messsages in this conversation.
-router.get('/:poolId', async (req, res) => {
+router.get('/:poolId', async (req:any, res) => {
     const { user } = req;
     const { offset } = req.query;
     const { poolId } = req.params;
@@ -125,9 +129,9 @@ router.get('/:poolId', async (req, res) => {
                 poolId: parseInt(poolId),
             },
             include: {
-                users: {
+                PoolRequest: {
                     where: {
-                        userId: user.uid
+                        userId: user.userId
                     }
                 }
             }
@@ -188,7 +192,7 @@ router.post('/:poolId', async (req, res) => {
                 poolId: parseInt(poolId),
             },
             include: {
-                users: {
+                PoolRequest: {
                     where: {
                         userId: user.uid
                     }
@@ -214,10 +218,14 @@ router.post('/:poolId', async (req, res) => {
                 poolId: parseInt(poolId),
             },
             include: {
-                users: true
+                PoolRequest: {
+                    include: {
+                        user: true,
+                    }
+                }
             }
         });
-        const poolUsers = poolWithUsers.users;
+        const poolUsers = poolWithUsers.PoolRequest.map(({ user }) => user);
 
         // remove the sender's id from the realtime update recipients
         poolUsers.forEach(({ userId }) => {

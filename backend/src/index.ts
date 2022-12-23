@@ -1,7 +1,6 @@
 import express from 'express';
 import cors from 'cors';
 import bp from 'body-parser';
-
 import admin from 'firebase-admin';
 import { PrismaClient } from '@prisma/client';
 import { Pool } from 'pg';
@@ -30,6 +29,8 @@ import poolRouter from './routes/pool/pool';
 import chatRouter from './routes/chat';
 import userRouter from './routes/user';
 import notificationsRouter from './routes/notifications';
+
+import './matching';
 
 const app = express();
 

@@ -17,3 +17,10 @@ export const getNotifications = async (offset?: number): Promise<Notification[]>
 
     return (resp.data as Notification[]);
 };
+
+export interface RegisterNotificationData {
+    expoPushToken: string;
+}
+export const registerNotifications = async (data: RegisterNotificationData): Promise<void> => {
+    await axios.post('/notifications/register', data);
+}

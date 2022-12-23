@@ -9,7 +9,7 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 
 declare global {
   namespace ReactNavigation {
-    interface RootParamList extends RootStackParamList {}
+    interface RootParamList extends RootStackParamList { }
   }
 }
 
@@ -47,6 +47,7 @@ export type PoolParamList = {
   PoolRequestView: undefined;
   FindPool: undefined;
   PoolScreen: undefined;
+  MatchedPoolScreen: undefined;
   ProfileView: undefined;
 }
 
@@ -66,7 +67,7 @@ export type AccountParamList = {
 export interface PoolSearchQuery {
   time: string;
   startPoint: string;
-  endPoint: string; 
+  endPoint: string;
 }
 
 export interface Pool {

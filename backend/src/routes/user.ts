@@ -72,7 +72,7 @@ router.get('/:userId/profile', async (req, res) => {
     const { userId } = req.params;
 
     try {
-        const resp = await getProfile(userId, user.uid);
+        const resp = await getProfile(user.uid, userId);
         return res.json(resp);
     } catch (e) {
         resError(res, e);
@@ -90,7 +90,7 @@ router.get('/profile', async (req, res) => {
     }
 });
 
-router.post('/profile', async (req, res) => {
+router.post('/profile', async (req:any, res) => {
     const { user } = req;
     const profile: Profile = req.body;
 

@@ -101,6 +101,14 @@ export const postPoolRequest = async (seasonId: number, data: SubmitPoolRequestD
 
     return (resp.data as SubmitPoolRequestResp);
 }
+export interface ValidatePoolRequestResp {
+    errorMsg?: string;
+}
+export const validatePoolRequest = async (seasonId: number, data: SubmitPoolRequestData): Promise<ValidatePoolRequestResp> => {
+    const resp = await axios.post(`/pool/season/${seasonId}/validate`, data);
+
+    return (resp.data as ValidatePoolRequestResp);
+}
 
 export interface UpdatePoolRequestData {
     departDate?: number;
@@ -112,6 +120,14 @@ export const updatePoolRequest = async (requestId: number, data: UpdatePoolReque
 
     const newSeason = await getPoolRequest(requestId);
     return newSeason;
+}
+export interface ValidateUpdatePoolRequestResp {
+    errorMsg?: string;
+}
+export const validateUpdatePoolRequest = async (requestId: number, data: UpdatePoolRequestData): Promise<ValidateUpdatePoolRequestResp> => {
+    const resp = await axios.post(`/pool/request/${requestId}/validate`, data);
+
+    return (resp.data as ValidateUpdatePoolRequestResp);
 }
 
 
@@ -144,6 +160,12 @@ export const defaultPoolData: PoolData = {
 }
 export const getPool = async (poolId: number): Promise<PoolData> => {
     const resp = await axios.get(`/pool/${poolId}`);
+
+    return (resp.data as PoolData);
+}
+
+export const getPotentialPool = async (matchId: number): Promise<PoolData> => {
+    const resp = await axios.get(`/pool/potential/${matchId}`);
 
     return (resp.data as PoolData);
 }

@@ -16,3 +16,8 @@ export function formatDate(date: Date, show?: boolean): string {
 export function removeInParentheses(text: string) {
     return text.replace(/ *\([^)]*\) */g, "");
 }
+
+export function truncateAndEllipsis(text: string, len: number) {
+    if (text.length <= len) return text;
+    return text.substring(0, len) + "...";
+}

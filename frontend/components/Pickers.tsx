@@ -156,7 +156,7 @@ export function FlexiblePlacesSelector(props: FlexiblePlacesSelectorProps) {
                     setModalVisible(!modalVisible);
                 }}
                 style={{
-                    margin: 50
+                    margin: 50,
                 }}
             >
                 <View style={styles.modalContainer}>
@@ -180,7 +180,7 @@ export function FlexiblePlacesSelector(props: FlexiblePlacesSelectorProps) {
                                 <Heading style={{ fontSize: 20, marginTop: -8, fontWeight: "600" }}>Select a location</Heading>
                             )}
                         </HStack>
-                        <View style={[styles.placeSelector, { width: "90%", paddingHorizontal: 20, }]}>
+                        <View style={[styles.placeSelector, { width: "90%", paddingHorizontal: 20 }]}>
                             {(() => {
                                 if (choosingExternal) {
                                     return (

@@ -48,8 +48,8 @@ export async function updatePlace(placeId: string) {
 
     await prisma.$executeRawUnsafe(`
         INSERT INTO "Place" ("placeId", "name", "coords", "updatedAt")
-        VALUES ('${place_id}', '${dbname}', ST_GeomFromText('POINT(${lat} ${lng})', 3857), '${updatedTime}')
-        ON CONFLICT ("placeId") DO UPDATE SET "name" = '${dbname}', "coords" = ST_GeomFromText('POINT(${lat} ${lng})', 3857), "updatedAt" = '${updatedTime}'
+        VALUES ('${place_id}', '${dbname}', ST_GeomFromText('POINT(${lng} ${lat})', 3857), '${updatedTime}')
+        ON CONFLICT ("placeId") DO UPDATE SET "name" = '${dbname}', "coords" = ST_GeomFromText('POINT(${lng} ${lat})', 3857), "updatedAt" = '${updatedTime}'
     `);
 }
 

@@ -1,8 +1,8 @@
 import express from 'express';
 import { resError } from '../../logging';
-import { PoolRequestData, PoolSeasonData, PoolSeasonDetails, SubmitPoolRequestResp } from '../../types/dataAccess/poolData';
+import { PoolRequestData, PoolSeasonData, PoolSeasonDetails, SubmitPoolRequestResp, ValidatePoolRequestResp } from '../../types/dataAccess/poolData';
 import moment from 'moment';
-import { getSeasonDestinations, updatePlace } from '../../placeAccess';
+import { getSeasonDestinations, placeCatEnum, updatePlace } from '../../placeAccess';
 import { removeTextInParenthesis } from '../../formatHelpers';
 
 const prisma = global.prisma;
@@ -26,7 +26,6 @@ router.get('/', async (req:any, res) => {
                         userId: user.uid,
                     },
                     include: {
-                        pool: true,
                         from: true,
                         to: true,
                     }
@@ -45,8 +44,8 @@ router.get('/', async (req:any, res) => {
                 
                 const departDate = moment(poolReq.departTime).format("MMM Do");
 
-                if (poolReq.pool) {
-                    poolId = poolReq.pool.poolId;
+                if (poolReq.poolId) {
+                    poolId = poolReq.poolId;
                     collapsedBodyText = `Your request for ${departDate} has been fulfilled...`;
                     expandedBodyText = `Fulfilled request to arrive at ${removeTextInParenthesis(poolReq.to.name)} on ${departDate} at ${moment(poolReq.departTime).format("h:mm a")}.`;
                 } else {
@@ -136,6 +135,36 @@ router.post('/:seasonId', async (req, res) => {
         } as SubmitPoolRequestResp);
     } catch (e) {
         return resError(res, e);
+    }
+});
+
+router.post('/:seasonId/validate', async (req, res) => {
+    const { user } = req;
+    const { seasonId } = req.params;
+    const { fromId, toId } = req.body;
+
+    try {
+        const sid = parseInt(seasonId);
+
+        const airport_terminal = placeCatEnum.airport_terminal;
+
+        const val = await prisma.place.findFirst({
+            where:{
+                placeId: {
+                    in: [fromId, toId],
+                },
+                category: airport_terminal,
+            }
+        });
+
+        if (!val) {
+            return res.json({
+                errorMsg: "Either pickup or destination location must be an airport terminal."
+            } as ValidatePoolRequestResp)
+        }
+        return res.json({} as ValidatePoolRequestResp);
+    } catch (error) {
+        resError(res, error);
     }
 });
 

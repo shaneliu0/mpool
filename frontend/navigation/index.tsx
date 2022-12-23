@@ -22,6 +22,7 @@ import NotFoundScreen from '../screens/NotFoundScreen';
 
 import FindPoolScreen from '../screens/pools/FindPoolScreen';
 import PoolScreen from '../screens/pools/PoolScreen';
+import MatchedPoolScreen from '../screens/pools/MatchedPoolScreen';
 import HomeScreen from '../screens/pools/HomeScreen';
 import PoolRequestCreationScreen from '../screens/pools/PoolRequestCreationScreen';
 import PoolRequestViewScreen from '../screens/pools/PoolRequestViewScreen';
@@ -174,6 +175,7 @@ function PoolNavigator() {
       <PoolStack.Screen name="PoolRequestView" component={PoolRequestViewScreen} options={{ title: "Viewing Request" }} />
       <PoolStack.Screen name="FindPool" component={FindPoolScreen} options={{ title: 'Find Pool' }} />
       <PoolStack.Screen name="PoolScreen" component={PoolScreen} options={{ title: 'Pool' }} />
+      <PoolStack.Screen name="MatchedPoolScreen" component={MatchedPoolScreen} options={{ title: 'Your Match' }} />
       <PoolStack.Screen name="ProfileView" component={ProfileViewScreen} options={{ title: "Profile" }} />
     </PoolStack.Navigator>
   );

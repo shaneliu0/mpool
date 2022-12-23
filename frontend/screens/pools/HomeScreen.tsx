@@ -84,7 +84,7 @@ function HomeFeed(props: PoolSearchProps) {
         <ScrollView style={styles.fullWidth}>
             <Text variant="h1">Hi {user?.displayName.split(' ')[0]}!</Text>
             <Text variant="h2">Break is just around the corner!</Text>
-            <Text variant="subtitle">Upcoming Pools</Text>
+            <Text variant="subtitle">Upcoming Seasons</Text>
             <View
                 style={{
                     marginTop: 15,

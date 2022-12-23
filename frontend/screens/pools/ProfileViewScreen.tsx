@@ -100,7 +100,6 @@ function ProfileViewScreen({ route, navigation }: RootTabScreenProps<'Pool'>) {
             (async () => {
                 try {
                     const resp = await getProfile((route.params as any).userId);
-
                     setProfile(resp);
                     setLoading(false);
                 } catch (error) {

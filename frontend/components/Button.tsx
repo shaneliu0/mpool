@@ -7,6 +7,7 @@ import {
 } from 'react-native';
 import { ThemeContext } from '../App';
 import { ActivityIndicator, View } from 'react-native';
+import GLogo from '../assets/svgs/glogo.svg';
 
 function FilledButton(props: StyledButtonProps) {
     const {
@@ -16,6 +17,7 @@ function FilledButton(props: StyledButtonProps) {
         onPress,
         loading,
         disabled,
+        fontSize,
     } = props;
     const theme = useContext(ThemeContext);
 
@@ -44,6 +46,7 @@ function FilledButton(props: StyledButtonProps) {
                     <Text
                         style={{
                             color: theme.complementColors[color],
+                            fontSize: fontSize,
                         }}
                     >{children}</Text>
                 );
@@ -60,6 +63,7 @@ function OutlinedButton(props: StyledButtonProps) {
         onPress,
         loading,
         disabled,
+        fontSize,
     } = props;
     const theme = useContext(ThemeContext);
 
@@ -90,6 +94,7 @@ function OutlinedButton(props: StyledButtonProps) {
                     <Text
                         style={{
                             color: forecolor,
+                            fontSize: fontSize,
                         }}
                     >{children}</Text>
                 );
@@ -106,6 +111,7 @@ interface StyledButtonProps {
     onPress?: () => void;
     loading?: boolean;
     disabled?: boolean;
+    fontSize?: number;
 }
 export default function StyledButton(props: StyledButtonProps) {
     const {
@@ -123,19 +129,52 @@ export default function StyledButton(props: StyledButtonProps) {
 
 interface TextButtonProps {
     children: React.ReactText;
+    color?: "primary" | "secondary";
     onPress: () => void;
 }
 export function TextButton(props: TextButtonProps) {
-    const { children, onPress } = props;
+    const { children, onPress, color } = props;
 
     return (
         <>
             <TouchableOpacity onPress={onPress} style={{ margin: 10, marginTop: 20, }}>
                 <Text style={{
                     fontSize: 20,
-                    color: "#007AFF",
+                    color: color === 'secondary' ? "black" : "#007AFF",
                 }}>{children}</Text>
             </TouchableOpacity>
         </>
+    )
+}
+
+interface SignInWithGoogleButtonProps {
+    onPress: () => void;
+}
+export function SignInWithGoogleButton(props: SignInWithGoogleButtonProps) {
+    const { onPress, } = props;
+
+    return (
+        <TouchableOpacity
+            style={{
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "space-between",
+                height: 56,
+                width: 300,
+                borderRadius: 20,
+                backgroundColor: "#FFFFFF",
+            }}
+            onPress={onPress}
+        >
+            <GLogo style={{ margin: 20, width: 30, height: 30, }} />
+            <Text style={{
+                color: "#797979",
+                fontWeight: "500",
+                fontFamily: "Roboto",
+                fontSize: 20,
+                lineHeight: 23,
+                marginRight: 65,
+            }}>Sign in with Google</Text>
+        </TouchableOpacity>
     )
 }

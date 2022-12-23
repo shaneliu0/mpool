@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { View, StyleSheet, ScrollView } from 'react-native';
+import { View, StyleSheet, ScrollView, Alert } from 'react-native';
 import Text from '../../components/StyledText';
-import { defaultPoolRequestData, getPoolRequest, PoolPlace, PoolRequestData, updatePoolRequest, UpdatePoolRequestData } from '../../dataAccess/poolData';
+import { defaultPoolRequestData, getPoolRequest, PoolPlace, PoolRequestData, updatePoolRequest, UpdatePoolRequestData, validateUpdatePoolRequest } from '../../dataAccess/poolData';
 import { RootTabScreenProps } from '../../types';
 import * as Logging from '../../Logging';
 import { BulletList, DoubleText, ExpandableBox, Loading, PositionedMap } from '../../components/Display';
@@ -89,6 +89,8 @@ function PoolRequest(props: PoolRequestProps) {
 
         (async () => {
             try {
+                const valResp = await validateUpdatePoolRequest(irid, updateObj);
+                if (valResp.errorMsg) return Alert.alert(valResp.errorMsg);
                 const resp = await updatePoolRequest(irid, updateObj);
                 setRequest(resp);
                 setNewDate(new Date(resp.departTime));

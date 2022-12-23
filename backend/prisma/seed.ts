@@ -103,12 +103,30 @@ async function connectUniversityDefaultPlaces() {
     })
 }
 
+async function sampleMatch() {
+    await prisma.potentialMatch.create({
+        data: {
+            potentialMatchId: 1,
+            seasonId: 2,
+            userId: "sample-user-1" // sample user 1
+        }
+    });
+    await prisma.potentialMatch.create({
+        data: {
+            potentialMatchId: 2,
+            seasonId: 2,
+            userId: "sample-user-2" // sample user 2
+        }
+    });
+}
+
 async function main() {
     // await universities();
     // await places();
     // await connectUniversityDefaultPlaces();
     // await seasons();
     // await prompt();
+    await sampleMatch();
 }
 
 main()
