@@ -26,6 +26,7 @@ import {
 import Colors from './constants/Colors';
 import { API_BASE_URL } from './config';
 import { registerNotifications } from './dataAccess/notifications';
+import { ThemeContext } from './Context';
 
 // configurate axios
 axios.defaults.baseURL = API_BASE_URL;
@@ -33,8 +34,6 @@ axios.defaults.baseURL = API_BASE_URL;
 LogBox.ignoreAllLogs();
 
 const selectColorMode = (scheme: 'light' | 'dark') => (light: string, dark: string) => scheme === 'light' ? light : dark;
-
-export const ThemeContext = React.createContext<typeof Colors.light>(Colors.light);
 
 function App() {
   const user = useSelector((state: any) => state.auth.user);

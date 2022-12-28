@@ -1,16 +1,12 @@
-import React, { useContext, useEffect, useState } from 'react';
-import { View, StyleSheet, Modal, useColorScheme, ScrollView, ViewPagerAndroidBase, Alert } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, StyleSheet, ScrollView, Alert } from 'react-native';
 import { RootTabScreenProps } from '../../types';
 
 import Text from '../../components/StyledText';
-import { PoolPlace, defaultPoolPlace, defaultPoolSeasonDetails, getPoolSeasonDetails, PoolSeasonDetails, postPoolRequest, validatePoolRequest } from '../../dataAccess/poolData';
+import { PoolPlace, defaultPoolSeasonDetails, getPoolSeasonDetails, PoolSeasonDetails, postPoolRequest, validatePoolRequest } from '../../dataAccess/poolData';
 import { DoubleText, ExpandableBox, BulletList, Loading, PositionedMap } from '../../components/Display';
-import { AntDesign, MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons';
-import { DateTimeSelector, FlexiblePlacesSelector, PlaceInputModal, PlacesSelector, SingleSelect } from '../../components/Pickers';
-import { Heading, HStack, IconButton, Input } from 'native-base';
-import { GooglePlaceData, GooglePlaceDetail } from 'react-native-google-places-autocomplete';
-import { ThemeContext } from '../../App';
-import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
+import { AntDesign, MaterialIcons } from '@expo/vector-icons';
+import { DateTimeSelector, FlexiblePlacesSelector } from '../../components/Pickers';
 import StyledButton from '../../components/Button';
 import { FadeInView } from '../../components/Animation';
 import * as Logging from '../../Logging';

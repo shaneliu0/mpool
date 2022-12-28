@@ -1,14 +1,13 @@
 import * as React from 'react';
 import { useState, useEffect } from 'react';
 
-import { ScrollView, StyleSheet, Button, TouchableOpacity, Alert, Pressable } from 'react-native';
+import { ScrollView, StyleSheet, Button, TouchableOpacity } from 'react-native';
 
 import {
   Heading,
   HStack,
   useMediaQuery,
   useTheme,
-  Skeleton,
   Select,
   CheckIcon,
   Box,
@@ -20,9 +19,7 @@ import {
 
 import useColorScheme from '../../hooks/useColorScheme';
 
-import SkeletonContent from 'react-native-skeleton-content';
-import { GooglePlaceData, GooglePlaceDetail, GooglePlacesAutocomplete } from 'react-native-google-places-autocomplete';
-import Toast from 'react-native-toast-message';
+import { GooglePlaceData, GooglePlaceDetail } from 'react-native-google-places-autocomplete';
 
 import { Text, View, } from '../../components/Themed';
 import { RootTabScreenProps, PoolSearchQuery, Pool } from '../../types';
@@ -31,14 +28,11 @@ import axios from 'axios';
 import { MaterialIcons } from '@expo/vector-icons';
 import { selectUser } from '../../slices/authSlice';
 import { useSelector } from 'react-redux';
-import { authAsync } from 'expo-app-auth';
 
 import { Modal } from 'react-native';
 
 import { PlacesSelector, DateTimeSelector } from '../../components/Pickers';
 
-import { GOOGLE_PLACES_API_KEY } from '../../config';
-import { convertAbsoluteToRem } from 'native-base/lib/typescript/theme/tools';
 import * as Logging from '../../Logging';
 
 interface PlaceInputModalProps {
@@ -272,7 +266,7 @@ function ViewPools(props: ViewPoolsProps) {
   )
 }
 
-export default function FindPoolScreen({ navigation }: RootTabScreenProps<'PoolRoot'>) {
+export default function FindPoolScreen({ navigation }: RootTabScreenProps<'Pool'>) {
   const [searchQuery, setSearchQuery] = useState<PoolSearchQuery | null>(null);
   const [loadingPools, setLoadingPools] = useState(true);
   const [pools, setPools] = useState<any[]>([]);
@@ -377,16 +371,7 @@ function PoolDisplayBar(props: { key: number, pool?: Pool, action: () => void, l
       );
     } else {
       return (
-        // <Skeleton mx={10} my={2} height={20} style={styles.sideMargins} />
-        <View style={{ marginTop: 20 }}>
-          <SkeletonContent
-            containerStyle={[styles.sideMargins, { height: 110 }]}
-            isLoading={true}
-            layout={[
-              { key: 'a', width: '100%', height: 100 },
-            ]}
-          />
-        </View>
+        null
       )
     }
   } else {
@@ -425,7 +410,7 @@ function PoolDisplayBar(props: { key: number, pool?: Pool, action: () => void, l
       )
     } else {
       return (
-        <Skeleton mx={10} my={2} height={60} style={styles.sideMargins} />
+        null
       )
     }
   }

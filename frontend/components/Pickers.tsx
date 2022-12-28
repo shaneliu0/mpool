@@ -18,7 +18,7 @@ import {
 import { GooglePlaceData, GooglePlaceDetail, GooglePlacesAutocomplete } from "react-native-google-places-autocomplete";
 import { GOOGLE_PLACES_API_KEY } from "../config";
 import { HStack } from "native-base";
-import { ThemeContext } from "../App";
+import { ThemeContext } from "../Context";
 import { MaterialIcons } from "@expo/vector-icons";
 import * as Logging from '../Logging';
 import { defaultPoolPlace, PoolPlace, PoolPlaceCategory } from "../dataAccess/poolData";

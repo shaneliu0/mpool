@@ -3,7 +3,7 @@ import { HStack, IconButton, Heading } from "native-base";
 import React, { useContext } from "react";
 
 import { Modal, StyleSheet, View } from 'react-native';
-import { ThemeContext } from "../App";
+import { ThemeContext } from "../Context";
 import { TextButton } from "./Button";
 import { Loading } from "./Display";
 import Text from "./StyledText";

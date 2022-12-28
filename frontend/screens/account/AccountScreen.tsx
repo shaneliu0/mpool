@@ -11,7 +11,7 @@ import { View } from '../../components/Themed';
 import { defaultContentBlock, defaultProfile, getOwnProfile, getProfileContentPrompts, Profile, ProfileContentBlock, ProfileContentPrompt, saveProfile } from '../../dataAccess/users';
 import { ProfileDisplay } from '../pools/ProfileViewScreen';
 import Text from '../../components/StyledText';
-import { ThemeContext } from '../../App';
+import { ThemeContext } from '../../Context';
 import Animated, { runOnJS, useAnimatedProps, useAnimatedStyle, useSharedValue, withSpring, withTiming, } from 'react-native-reanimated';
 import { BlurView } from 'expo-blur';
 import Button from '../../components/Button';

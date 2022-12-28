@@ -12,7 +12,7 @@ import { RootTabScreenProps } from '../../types';
 
 import Animated, { useAnimatedStyle, useSharedValue, withDelay, withTiming } from 'react-native-reanimated';
 import { useSelector } from 'react-redux';
-import { ThemeContext } from '../../App';
+import { ThemeContext } from '../../Context';
 import Layout from '../../constants/Layout';
 import { selectUser } from '../../slices/authSlice';
 

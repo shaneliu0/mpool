@@ -2,21 +2,13 @@ import React, { useEffect, useRef, useState } from 'react';
 import { StyleSheet, Platform, Image, ImageSourcePropType } from 'react-native';
 import { View } from '../components/Themed';
 
-import useColorScheme from '../hooks/useColorScheme';
 
 import {
-    Heading,
-    Container,
-    useMediaQuery,
-    useTheme,
-    Center,
-    Box,
-    Button,
+    useTheme, Box
 } from 'native-base';
 
 import * as Google from 'expo-google-app-auth';
 import Toast from 'react-native-toast-message';
-import StyledFirebaseAuth from 'react-firebaseui/StyledFirebaseAuth';
 import firebase from 'firebase/compat/app';
 import 'firebase/compat/auth';
 

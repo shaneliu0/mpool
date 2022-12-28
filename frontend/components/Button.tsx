@@ -5,7 +5,7 @@ import {
     Text,
     StyleProp
 } from 'react-native';
-import { ThemeContext } from '../App';
+import { ThemeContext } from '../Context';
 import { ActivityIndicator, View } from 'react-native';
 import GLogo from '../assets/svgs/glogo.svg';
 import Colors from '../constants/Colors';
