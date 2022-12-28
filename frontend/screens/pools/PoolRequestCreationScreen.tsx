@@ -52,6 +52,9 @@ export default function PoolRequestCreationScreen({ route, navigation }: RootTab
             (async () => {
                 try {
                     const data = await getPoolSeasonDetails(seasonId);
+                    if (data.infoAlert) {
+                        Alert.alert(data.infoAlert);
+                    }
                     setPoolSeasonDetails(data);
                     setLoadingPoolDetails(false);
                 } catch (e) {
@@ -161,7 +164,7 @@ export default function PoolRequestCreationScreen({ route, navigation }: RootTab
                     >
                         <View style={styles.innerPickerView}>
                             <Text variant="bodylarge">Pickup Location</Text>
-                            <FlexiblePlacesSelector 
+                            <FlexiblePlacesSelector
                                 onSelect={setFrom}
                                 items={destinations}
                                 placeholder="Select your departure location"

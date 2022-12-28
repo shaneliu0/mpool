@@ -3,9 +3,13 @@ import seasonRouter from './season';
 import requestRouter from './request';
 
 import { resError } from '../../logging';
-import { PoolData, PoolPlace, postPoolRequest } from '../../types/dataAccess/poolData';
+import { defaultPoolData, GetPoolStatusResp, MatchedPoolId, PoolData, PoolMember, PoolPlace, postPoolRequest } from '../../types/dataAccess/poolData';
 import { getCenterOfCoordinates, getLatLngs, reverseGeocodeToAddress } from '../../placeAccess';
 import { Pool, PoolRequest } from '@prisma/client';
+import { pushAndEmailPersistent } from '../../notify';
+import * as MPoolBot from './mPoolBot';
+import { checkCanAccessMatch, checkCanAccessPool } from '../../permissions/poolPerms';
+import { checkUserMiddleware } from '../../permissions/userPerms';
 
 const prisma = global.prisma;
 
@@ -24,6 +28,8 @@ const LOC_WEIGHT = 0.60;
 const TIME_WEIGHT = 0.20;
 const INTERESTS_WEIGHT = 0.20;
 
+router.use(checkUserMiddleware);
+
 router.use('/season', seasonRouter);
 router.use('/request', requestRouter);
 
@@ -32,21 +38,55 @@ router.get('/search', async (req, res) => {
 
 });
 
-router.get('/potential/:matchId', async (req:any, res) => {
+router.get('/potential/:matchId', async (req: any, res) => {
     const { user } = req;
     const { matchId } = req.params;
 
     try {
         const mid = parseInt(matchId);
+        if (!(await checkCanAccessMatch(user.uid, mid))) {
+            return res.sendStatus(403);
+        }
         const match = await prisma.potentialMatch.findFirstOrThrow({
-            where: { potentialMatchId: mid }
+            where: { potentialMatchId: mid },
+            include: {
+                users: true,
+                derivedPool: {
+                    include: {
+                        PoolRequest: true,
+                    },
+                }
+            }
         });
-        if (match.userId) {
-            const pr = await getSimulatedPoolFromPartner(match.seasonId, user.uid, match.userId);
-            return res.json(pr as PoolData);
+        if (match.declined) {
+            return res.json({
+                ...defaultPoolData,
+                error: "This match was declined by a user. We're back on finding a match for you."
+            })
+        }
+        if (match.derivedPool?.disabled) {
+            return res.json({
+                ...defaultPoolData,
+                error: "This pool no longer exists."
+            } as PoolData);
+        }
+        let joined = match.derivedPool && match.derivedPool.PoolRequest.some(r => r.userId == user.uid);
+        if (match.users.length) {
+            const partnerId = match.users[0].userId === user.uid ? match.users[1].userId : match.users[0].userId;
+            const pr = await getSimulatedPoolFromPartner(match.seasonId, user.uid, partnerId);
+            return res.json({
+                ...pr,
+                statusMessage: joined ? 'You already joined this pool.' : pr.statusMessage,
+                status: joined ? 'confirmed' : 'potential',
+            } as PoolData);
         } else if (match.poolId) {
-            const pr = await getMatchedPool(match.poolId);
-            return res.json(pr as PoolData);
+            const pr = await getMatchedPool(match.poolId, user.uid);
+            if (!pr) throw new Error();
+            return res.json({
+                ...pr,
+                statusMessage: joined ? 'You already joined this pool.' : pr.statusMessage,
+                status: joined ? 'confirmed' : 'potential',
+            } as PoolData);
         } else {
             throw new Error("Couldn't locate match.")
         }
@@ -55,7 +95,140 @@ router.get('/potential/:matchId', async (req:any, res) => {
     }
 });
 
-async function getMatchedPool(pid: number): Promise<PoolData | null> {
+router.post('/potential/:matchId/accept', async (req, res) => {
+    const { user } = req;
+    const { matchId } = req.params;
+
+    try {
+        const mid = parseInt(matchId);
+        if (!(await checkCanAccessMatch(user.uid, mid))) {
+            return res.sendStatus(403);
+        }
+        const match = await prisma.potentialMatch.findFirstOrThrow({
+            where: { potentialMatchId: mid },
+            include: { users: true }
+        });
+        let describedPool;
+        if (match.users.length) {
+            const partnerId = match.users[0].userId === user.uid ? match.users[1].userId : match.users[0].userId;
+            describedPool = await getSimulatedPoolFromPartner(match.seasonId, user.uid, partnerId);
+        } else if (match.poolId) {
+            describedPool = await getMatchedPool(match.poolId, user.uid);
+        }
+        if (!describedPool) throw new Error("Couldn't locate match.");
+
+        const poolRequest = await prisma.poolRequest.findFirstOrThrow({
+            where: {
+                userId: user.uid,
+                seasonId: match.seasonId,
+            }
+        });
+
+        if (match.derivedPoolId) {
+            await prisma.pool.update({
+                where: { poolId: match.derivedPoolId },
+                data: {
+                    PoolRequest: {
+                        connect: { requestId: poolRequest.requestId }
+                    }
+                }
+            });
+            await MPoolBot.sendMemberJoinedMessage(match.derivedPoolId, user.uid);
+        } else {
+            const createdPool = await prisma.pool.create({
+                data: {
+                    season: { connect: { id: match.seasonId } },
+                    departTime: new Date(describedPool.departTime),
+                    from: { connect: { placeId: describedPool.from.id } },
+                    to: { connect: { placeId: describedPool.to.id } },
+                    DerivedFromMatch: { connect: { potentialMatchId: match.potentialMatchId } },
+                    PoolRequest: { connect: { requestId: poolRequest.requestId } }
+                }
+            });
+            await MPoolBot.sendPoolWelcomeMessage(createdPool.poolId);
+            await MPoolBot.sendMemberJoinedMessage(createdPool.poolId, user.uid);
+        }
+
+        return res.sendStatus(200);
+    } catch (error) {
+        resError(res, error);
+    }
+});
+
+router.post('/potential/:matchId/decline', async (req, res) => {
+    const { user } = req;
+    const { matchId } = req.params;
+
+    try {
+        // if it was a one person match onto an existing pool, then just mark the match as declined
+        // if it was a multi person match together, mark the match as declined, then notify the other person
+        // if the pool still only had one person, then also delete the pool.
+
+        const mid = parseInt(matchId);
+        if (!(await checkCanAccessMatch(user.uid, mid))) {
+            return res.sendStatus(403);
+        }
+        const match = await prisma.potentialMatch.findFirstOrThrow({
+            where: { potentialMatchId: mid },
+            include: { users: true }
+        });
+        if (match.users.length > 1) {
+            if (match.derivedPoolId) {
+                const pool = await prisma.pool.findFirstOrThrow({
+                    where: { poolId: match.derivedPoolId },
+                    include: { PoolRequest: true }
+                });
+                if (pool.PoolRequest.length < 2) {
+                    await disableAndNotifyPool(match.derivedPoolId);
+                }
+            }
+
+            await prisma.potentialMatch.update({
+                where: { potentialMatchId: mid },
+                data: { declined: true }
+            });
+        } else {
+            await prisma.potentialMatch.update({
+                where: { potentialMatchId: mid },
+                data: { declined: true }
+            });
+        }
+        return res.sendStatus(200);
+    } catch (error) {
+        resError(res, error);
+    }
+});
+
+router.get('/potential/:matchId/pool', async (req, res) => {
+    const { user } = req;
+    const { matchId } = req.params;
+
+    try {
+        const mid = parseInt(matchId);
+        if (!(await checkCanAccessMatch(user.uid, mid))) {
+            return res.sendStatus(403);
+        }
+        const match = await prisma.potentialMatch.findFirstOrThrow({
+            where: { potentialMatchId: mid },
+            include: { users: true }
+        });
+
+        if (!match.derivedPoolId) {
+            return res.json({
+                poolId: -1,
+                error: "Couldn't locate pool!"
+            } as MatchedPoolId)
+        }
+
+        return res.json({
+            poolId: match.derivedPoolId
+        } as MatchedPoolId);
+    } catch (error) {
+        resError(res, error);
+    }
+});
+
+async function getMatchedPool(pid: number, requesterId: string): Promise<PoolData | null> {
     const pool = await prisma.pool.findFirstOrThrow({
         where: { poolId: pid },
         include: {
@@ -68,6 +241,14 @@ async function getMatchedPool(pid: number): Promise<PoolData | null> {
                     to: true,
                     user: true
                 }
+            },
+            PotentialMatch: {
+                where: { declined: false },
+                include: { users: true }
+            },
+            DerivedFromMatch: {
+                where: { declined: false },
+                include: { users: true }
             }
         }
     });
@@ -97,13 +278,13 @@ async function getMatchedPool(pid: number): Promise<PoolData | null> {
 
         departStr = new Date(averageTime).getTime();
         fromObj = {
-            name: reverseGeocodeFrom,
-            id: "",
+            name: reverseGeocodeFrom.formatted_address,
+            id: reverseGeocodeFrom.place_id,
             coords: averageFromCoords
         };
         toObj = {
-            name: reverseGeocodeTo,
-            id: "",
+            name: reverseGeocodeTo.formatted_address,
+            id: reverseGeocodeTo.place_id,
             coords: averageToCoords
         };
     } else {
@@ -122,20 +303,56 @@ async function getMatchedPool(pid: number): Promise<PoolData | null> {
             coords: toLatLngs[0]
         };
     }
+    const memberRes: PoolMember[] = [];
+    const includedUids = new Set<string>();
+    let inPool = false;
+    for (const pr of pool.PoolRequest) {
+        includedUids.add(pr.userId);
+        if (pr.userId === requesterId) {
+            inPool = true;
+        }
+        memberRes.push({
+            userId: pr.user.userId,
+            name: pr.user.displayName,
+            photoUrl: pr.user.photoUrl,
+        });
+    }
+
+    for (const match of pool.DerivedFromMatch) {
+        for (const user of match.users) {
+            if (includedUids.has(user.userId)) continue;
+            includedUids.add(user.userId);
+            memberRes.push({
+                userId: user.userId,
+                name: user.displayName,
+                photoUrl: user.photoUrl,
+                status: "potential"
+            });
+        }
+    }
+
+    for (const match of pool.PotentialMatch) {
+        for (const user of match.users) {
+            if (includedUids.has(user.userId)) continue;
+            includedUids.add(user.userId);
+            memberRes.push({
+                userId: user.userId,
+                name: user.displayName,
+                photoUrl: user.photoUrl,
+                status: "potential"
+            });
+        }
+    }
 
     return ({
         poolId: 1,
         seasonName: pool.season.name,
-        status: pool.PoolRequest.length > 0 ? "confirmed" : "potential",
+        status: inPool ? "confirmed" : "potential",
         statusMessage,
         departTime: departStr,
         from: fromObj,
         to: toObj,
-        members: pool.PoolRequest.map(({ user }) => ({
-            userId: user.userId,
-            name: user.displayName,
-            photoUrl: user.photoUrl
-        }))
+        members: memberRes,
     } as PoolData)
 }
 
@@ -173,17 +390,19 @@ async function getSimulatedPoolFromPartner(seasonId: number, curUserId: string, 
     const reverseGeocodeTo = await reverseGeocodeToAddress(averageToCoords);
 
     return {
-        poolId: 1,
+        poolId: -1,
         seasonName: curUserRequest.season.name,
         status: "potential",
         statusMessage: "We found a potential match.\n\nDisplayed times and locations aren't final.\n\nCheck them off to confirm the tentative time and location.",
         departTime: averageTime,
         from: {
-            name: reverseGeocodeFrom,
+            name: reverseGeocodeFrom.formatted_address,
+            id: reverseGeocodeFrom.place_id,
             coords: averageFromCoords
         },
         to: {
-            name: reverseGeocodeTo,
+            name: reverseGeocodeTo.formatted_address,
+            id: reverseGeocodeTo.place_id,
             coords: averageToCoords
         },
         members: [
@@ -191,16 +410,17 @@ async function getSimulatedPoolFromPartner(seasonId: number, curUserId: string, 
                 userId: partnerRequest.user.userId,
                 name: partnerRequest.user.displayName.split(' ')[0],
                 photoUrl: partnerRequest.user.photoUrl,
+                status: partnerRequest.poolId ? undefined : "potential",
             },
             {
                 userId: curUserRequest.user.userId,
                 name: curUserRequest.user.displayName,
                 photoUrl: curUserRequest.user.photoUrl,
+                status: curUserRequest.poolId ? undefined : "potential",
             }
         ]
     } as PoolData;
 }
-
 
 router.get('/:poolId', async (req: any, res) => {
     const { user } = req;
@@ -208,7 +428,10 @@ router.get('/:poolId', async (req: any, res) => {
 
     try {
         const pid = parseInt(poolId);
-        const poolD = await getMatchedPool(pid);
+        if (!(await checkCanAccessPool(user.uid, pid))) {
+            return res.sendStatus(403);
+        }
+        const poolD = await getMatchedPool(pid, user.uid);
         if (!poolD) throw new Error("Something went wrong.");
         return res.json(poolD);
     } catch (error) {
@@ -216,18 +439,203 @@ router.get('/:poolId', async (req: any, res) => {
     }
 });
 
-/** Function to put a user into the pool that they selected.
- *  @param No parameters
- *  @returns Nothing
- */
-router.post('/:poolId/join', async (req, res) => {
+router.get('/:poolId/status', async (req:any, res) => {
+    const { user } = req;
+    const { poolId } = req.params;
 
-    return res.json({ status: "OK" });
+    try {
+        const pid = parseInt(poolId);
+        if (!(await checkCanAccessPool(user.uid, pid))) {
+            return res.sendStatus(403);
+        }
+        const pool = await prisma.pool.findFirstOrThrow({
+            where: { poolId: pid },
+            include: {
+                PoolRequest: {
+                    where: {
+                        userId: user.uid,
+                    }
+                },
+                DerivedFromMatch: {
+                    where: {
+                        users: {
+                            some: {
+                                userId: user.uid,
+                            }
+                        },
+                        declined: false,
+                    }
+                },
+                PotentialMatch: {
+                    where: {
+                        users: {
+                            some: {
+                                userId: user.uid,
+                            }
+                        },
+                        declined: false,
+                    }
+                },
+            }
+        });
+        const inPool = pool.PoolRequest.length > 0;
+        if (inPool) {
+            return res.json({});
+        }
+
+        let matchId;
+
+        if (pool.DerivedFromMatch.length > 0) {
+            matchId = pool.DerivedFromMatch[0].potentialMatchId;
+        } else if (pool.PotentialMatch.length > 0) {
+            matchId = pool.PotentialMatch[0].potentialMatchId;
+        } else {
+            throw new Error("Something went wrong.");
+        }
+
+        return res.json({
+            matchId,
+        } as GetPoolStatusResp);
+    } catch (error) {
+        resError(res, error);
+    }
 });
 
-function parseCoordinates(coords: string): number[] {
-    const [lat, lng] = coords.split(',');
-    return [parseFloat(lat), parseFloat(lng)];
+router.delete('/:poolId', async (req, res) => {
+    const { user } = req;
+    const { poolId } = req.params;
+
+    try {
+        const pid = parseInt(poolId);
+        if (!(await checkCanAccessPool(user.uid, pid))) {
+            return res.sendStatus(403);
+        }
+        const poolRequest = await prisma.poolRequest.findFirstOrThrow({
+            where: {
+                userId: user.uid,
+                poolId: pid,
+            }
+        })
+        await prisma.poolRequest.update({
+            where: { requestId: poolRequest.requestId },
+            data: {
+                poolId: null,
+            }
+        });
+
+        const updatedPool = await prisma.pool.findFirstOrThrow({
+            where: { poolId: pid },
+            include: {
+                PoolRequest: true
+            }
+        });
+        if (updatedPool?.PoolRequest.length < 2) {
+            await disableAndNotifyPool(updatedPool.poolId);
+        } else {
+            await MPoolBot.sendMemberLeftMessage(updatedPool.poolId, user.uid)
+        }
+        return res.sendStatus(200);
+    } catch (error) {
+        resError(res, error);
+    }
+});
+
+async function disableAndNotifyPool(poolId: number) {
+    const pool = await prisma.pool.update({
+        where: { poolId },
+        data: {
+            disabled: true,
+        },
+        include: { season: true }
+    });
+    const remainingRequests = await prisma.poolRequest.findMany({
+        where: {
+            poolId,
+        },
+        include: {
+            user: true,
+        }
+    });
+    console.log(remainingRequests);
+    await Promise.all(remainingRequests.map(async ({ user, ...request }) => {
+        await pushAndEmailPersistent(
+            user.userId,
+            `Your pool ${pool.season.name} has been disabled`,
+            "Your pool has been disabled because there are not enough members to form a pool. We're looking for a new match for you.",
+            "info",
+            {}
+        );
+        await prisma.poolRequest.update({
+            where: {
+                requestId: request.requestId,
+            },
+            data: {
+                poolId: null,
+            }
+        });
+    }))
+}
+
+export async function getAllPoolMembers(poolId: number): Promise<PoolMember[]> {
+    const pool = await prisma.pool.findFirstOrThrow({
+        where: { poolId: poolId },
+        include: {
+            PoolRequest: {
+                include: { user: true }
+            },
+            DerivedFromMatch: {
+                where: {
+                    declined: false,
+                },
+                include: { users: true }
+            },
+            PotentialMatch: {
+                where: {
+                    declined: false,
+                },
+                include: { users: true }
+            },
+        }
+    });
+
+    const memberRes: PoolMember[] = [];
+    const includedUids = new Set<string>();
+
+    for (const pr of pool.PoolRequest) {
+        includedUids.add(pr.userId);
+        memberRes.push({
+            userId: pr.user.userId,
+            name: pr.user.displayName,
+            photoUrl: pr.user.photoUrl,
+        });
+    }
+
+    for (const match of pool.DerivedFromMatch) {
+        for (const user of match.users) {
+            if (includedUids.has(user.userId)) continue;
+            includedUids.add(user.userId);
+            memberRes.push({
+                userId: user.userId,
+                name: user.displayName,
+                photoUrl: user.photoUrl,
+                status: "potential"
+            });
+        }
+    }
+
+    for (const match of pool.PotentialMatch) {
+        for (const user of match.users) {
+            if (includedUids.has(user.userId)) continue;
+            includedUids.add(user.userId);
+            memberRes.push({
+                userId: user.userId,
+                name: user.displayName,
+                photoUrl: user.photoUrl,
+                status: "potential"
+            });
+        }
+    }
+    return memberRes;
 }
 
 export default router;

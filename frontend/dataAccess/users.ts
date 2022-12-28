@@ -41,3 +41,12 @@ export async function saveProfile(newProfile: Profile) {
     const resp = await axios.post('/user/profile', newProfile);
     return (resp.data as Profile);
 }
+
+export interface CheckedInResp {
+    checkedIn: boolean;
+    errorSignOutMsg?: string;
+}
+export async function getCheckedInStatus() {
+    const resp = await axios.get('/user/checkedin');
+    return (resp.data as CheckedInResp);
+}

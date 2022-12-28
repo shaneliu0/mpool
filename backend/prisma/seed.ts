@@ -108,16 +108,32 @@ async function sampleMatch() {
         data: {
             potentialMatchId: 1,
             seasonId: 2,
-            userId: "sample-user-1" // sample user 1
+            users: {
+                connect: [
+                    { userId: "sample-user-1" }, // sample user 1
+                    { userId: "sample-user-2" }, // sample user 2
+                ]
+            }
         }
     });
-    await prisma.potentialMatch.create({
+}
+
+async function MPoolChatUser() {
+    await prisma.user.create({
         data: {
-            potentialMatchId: 2,
-            seasonId: 2,
-            userId: "sample-user-2" // sample user 2
+            displayName: "MPool",
+            email: "mpool@example.com",
+            photoUrl: "https://example.com/mpool-icon.png",
+            userId: "mpool",
+            Profile: {
+                create: {
+                    userId: "mpool",
+                    initialized: true,
+                    description: ""
+                }
+            }
         }
-    });
+    })
 }
 
 async function main() {
@@ -126,7 +142,8 @@ async function main() {
     // await connectUniversityDefaultPlaces();
     // await seasons();
     // await prompt();
-    await sampleMatch();
+    // await sampleMatch();
+    await MPoolChatUser();
 }
 
 main()

@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-export type NotificationType = "poolmatched";
+export type NotificationType = "poolmatched" | "info";
 
 export interface Notification {
     notificationId: number;

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, StyleSheet, ScrollView, Alert } from 'react-native';
 import Text from '../../components/StyledText';
-import { defaultPoolRequestData, getPoolRequest, PoolPlace, PoolRequestData, updatePoolRequest, UpdatePoolRequestData, validateUpdatePoolRequest } from '../../dataAccess/poolData';
+import { cancelPoolRequest, defaultPoolRequestData, getPoolRequest, PoolPlace, PoolRequestData, updatePoolRequest, UpdatePoolRequestData, validateUpdatePoolRequest } from '../../dataAccess/poolData';
 import { RootTabScreenProps } from '../../types';
 import * as Logging from '../../Logging';
 import { BulletList, DoubleText, ExpandableBox, Loading, PositionedMap } from '../../components/Display';
@@ -17,11 +17,13 @@ import StyledButton from '../../components/Button';
 interface PoolRequestProps {
     seasonId: number;
     requestId: number;
+    navigation: RootTabScreenProps<'Pool'>['navigation'];
 }
 function PoolRequest(props: PoolRequestProps) {
-    const { seasonId: isid, requestId: irid } = props;
+    const { seasonId: isid, requestId: irid, navigation } = props;
     const [request, setRequest] = useState<PoolRequestData>(defaultPoolRequestData);
     const [loadingRequest, setLoadingRequest] = useState<boolean>(true);
+    const [cancelling, setCancelling] = useState(false);
     const [editingIdx, setEditingIdx] = useState<number>(-1);
 
     const [newDate, setNewDate] = useState(() => {
@@ -37,7 +39,36 @@ function PoolRequest(props: PoolRequestProps) {
     const [dtsKey, setDtsKey] = useState(0);
     const viewPadding = useSharedValue(0);
 
-    
+    const handleCancelRequest = async () => {
+        Alert.alert(
+            'Cancel Request',
+            'Are you sure? This can\'t be undone.',
+            [
+                {
+                    text: 'Keep',
+                    style: 'cancel',
+                },
+                {
+                    text: 'Cancel',
+                    style: 'destructive',
+                    onPress: async () => {
+                        setCancelling(true);
+                        try {
+                            await cancelPoolRequest(requestId);
+                            navigation.navigate('Pool', {
+                                screen: "Home" 
+                            } as never)
+                        } catch (error) {
+                            Logging.Error(error);
+                        } finally {
+                            setCancelling(false);
+                        }
+                    }
+                }
+            ]
+        )
+    }
+
     const onDateChange = (_: any, selectedDate: any) => {
         const currentDate = selectedDate || newDate;
         setHasEditedDate(true);
@@ -181,7 +212,7 @@ function PoolRequest(props: PoolRequestProps) {
                     >
                         <View style={styles.innerPickerView}>
                             <Text variant="bodylarge">Pickup Location</Text>
-                            <FlexiblePlacesSelector 
+                            <FlexiblePlacesSelector
                                 onSelect={(p) => {
                                     setNewFrom(p);
                                     setHasEditedFrom(true);
@@ -251,7 +282,11 @@ function PoolRequest(props: PoolRequestProps) {
                         variant="bodylarge"
                     />
                 </View>
-                <View style={{ padding: 15, }}>
+                <Text variant="h2">Actions</Text>
+                <View style={styles.buttonViewStyle}>
+                    <StyledButton color="danger" loading={cancelling} onPress={handleCancelRequest}>Cancel Request</StyledButton>
+                </View>
+                {/* <View style={{ padding: 15, }}>
                     <Text variant="subtitle">Don't want to wait?</Text>
                     <View style={{
                         width: "100%",
@@ -261,7 +296,7 @@ function PoolRequest(props: PoolRequestProps) {
                     }}>
                         <StyledButton color='secondary'>Browse</StyledButton>
                     </View>
-                </View>
+                </View> */}
             </ScrollView>
         </FadeInView>
     );
@@ -274,7 +309,7 @@ export default function PoolRequestViewScreen({ route, navigation }: RootTabScre
 
     return (
         <View>
-            <PoolRequest seasonId={seasonId} requestId={requestId} />
+            <PoolRequest seasonId={seasonId} requestId={requestId} navigation={navigation} />
         </View>
     );
 }
@@ -294,4 +329,13 @@ const styles = StyleSheet.create({
         justifyContent: 'flex-start',
         paddingHorizontal: 15,
     },
+    buttonViewStyle: {
+        width: "100%",
+        padding: 15,
+        paddingLeft: 30,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        flexDirection: "row",
+    }
 });

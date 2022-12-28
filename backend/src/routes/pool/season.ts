@@ -86,12 +86,26 @@ router.get('/:seasonId', async (req, res) => {
             },
         });
 
+        const profile = await prisma.profile.findFirst({
+            where: {
+                userId: user.uid,
+                initialized: true,
+            }
+        });
+
+        let info;
+
+        if (!profile) {
+            info = "We recommend setting up your profile before creating a request. Tap account on the bottom navigation, then edit profile to set up your profile.";
+        }
+
         const dests = await getSeasonDestinations(sid);
 
         return res.json({
             id: sdata.id,
             displayTitle: sdata.name,
             destinations: dests,
+            infoAlert: info,
         } as PoolSeasonDetails)
     } catch (e) {
         console.error(e);

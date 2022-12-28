@@ -1,8 +1,9 @@
 import express from 'express';
 import { resError } from '../logging';
-import { Profile, ProfileContentBlock, ProfileContentPrompt } from '../types/dataAccess/users';
+import { CheckedInResp, Profile, ProfileContentBlock, ProfileContentPrompt } from '../types/dataAccess/users';
 import admin from 'firebase-admin';
 import { checkSharedPool } from '../permissions/poolPerms';
+import { checkUserAllowed } from '../permissions/userPerms';
 
 const auth = admin.auth();
 
@@ -65,7 +66,7 @@ router.get('/updatevalidate', async (req, res) => {
     } catch (error) {
         resError(res, error);
     }
-})
+});
 
 router.get('/:userId/profile', async (req, res) => {
     const { user } = req;
@@ -189,6 +190,43 @@ router.get('/profile/edit/prompts', async (req, res) => {
         }));
     } catch (e) {
         resError(res, e);
+    }
+});
+
+router.get('/checkedin', async (req, res) => {
+    const { user } = req;
+
+    try {
+        const valid = await checkUserAllowed(user.uid);
+        if (!valid) {
+            return res.json({
+                checkedIn: true,
+                errorSignOutMsg: "You need to sign in with a umich.edu Google account to access this app."
+            } as CheckedInResp);
+        }
+
+        const checkedIn = await prisma.checkedIn.findFirst({
+            where: {
+                userId: user.uid,
+            }
+        });
+        // if found, then the user has checked in already.
+        if (!checkedIn) {
+            await prisma.checkedIn.create({
+                data: {
+                    userId: user.uid,
+                }
+            })
+            return res.json({
+                checkedIn: false
+            } as CheckedInResp);
+        } else {
+            return res.json({
+                checkedIn: true
+            } as CheckedInResp);
+        }
+    } catch (error) {
+        resError(res, error);
     }
 });
 

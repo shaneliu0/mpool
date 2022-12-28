@@ -2,6 +2,7 @@ import express from "express";
 import moment from "moment";
 import { removeTextInParenthesis } from "../../formatHelpers";
 import { resError } from "../../logging";
+import { checkCanAccessRequest } from "../../permissions/poolPerms";
 import { getSeasonDestinations, getLatLngs, updatePlace, placeCatEnum } from "../../placeAccess";
 import { PoolRequestData, UpdatePoolRequestData, ValidateUpdatePoolRequestResp } from "../../types/dataAccess/poolData";
 
@@ -13,6 +14,9 @@ router.get('/:requestId', async (req, res) => {
 
     try {
         const rid = parseInt(requestId);
+        if (!(await checkCanAccessRequest(user.uid, rid))) {
+            return res.sendStatus(403);
+        }
         const request = await prisma.poolRequest.findFirst({
             where: {
                 requestId: rid,
@@ -69,7 +73,9 @@ router.put('/:requestId', async (req, res) => {
 
     try {
         const rid = parseInt(requestId);
-
+        if (!(await checkCanAccessRequest(user.uid, rid))) {
+            return res.sendStatus(403);
+        }
         if (fromId) await updatePlace(fromId);
         if (toId) await updatePlace(toId);
 
@@ -85,6 +91,25 @@ router.put('/:requestId', async (req, res) => {
         return res.sendStatus(200);
     } catch (e) {
         resError(res, e);
+    }
+});
+
+router.delete('/:requestId', async (req, res) => {
+    const { user } = req;
+    const { requestId } = req.params;
+
+    try {
+        const rid = parseInt(requestId);
+        if (!(await checkCanAccessRequest(user.uid, rid))) {
+            return res.sendStatus(403);
+        }
+        await prisma.poolRequest.delete({
+            where: { requestId: rid },
+        });
+
+        return res.sendStatus(200);
+    } catch (error) {
+        resError(res, error);
     }
 });
 

@@ -52,6 +52,7 @@ function ChatContainer(props: ChatContainerProps) {
         source={{
           uri: data
         }}
+        key={data}
       />
     })
   }
@@ -111,14 +112,16 @@ function ChatContainer(props: ChatContainerProps) {
             }}
           >
             <View style={{ width: 100, marginRight: 20 }}>
-              <Avatar.Group size="lg" max={2}>
-                {renderAvatars()}
-              </Avatar.Group>
+              {(avatars && avatars.length) ? (
+                <Avatar.Group size="lg" max={2}>
+                  {renderAvatars()}
+                </Avatar.Group>
+              ) : null}
             </View>
             <View style={[styles.nested, { marginRight: 0, marginLeft: 0 }]}>
               <Text style={[styles.normalText, styles.boldText]}>{name}</Text>
               <Text style={[styles.normalText, { marginTop: 5 }]}>{lastMessage}</Text>
-              <Text style={[styles.normalText, styles.lightText]}>{lastMessageTime}</Text>
+              {lastMessageTime && <Text style={[styles.normalText, styles.lightText]}>{lastMessageTime}</Text>}
             </View>
             <Entypo name="chevron-right" size={24} color="black" />
           </Animated.View>
@@ -138,13 +141,13 @@ export default function Chats({ route, navigation }: RootTabScreenProps<'Chat'>)
     setRefreshing(false);
 
     const willFocusSub = navigation.addListener('focus', () => {
-        onRefresh(false);
+      onRefresh(false);
     });
 
     return willFocusSub;
   }, []);
 
-  const onRefresh = React.useCallback(async (shouldSetRefresh=true) => {
+  const onRefresh = React.useCallback(async (shouldSetRefresh = true) => {
     shouldSetRefresh && setRefreshing(true);
     try {
       const { data } = await axios.get('/chat');
@@ -183,7 +186,7 @@ export default function Chats({ route, navigation }: RootTabScreenProps<'Chat'>)
         style={styles.chats}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
-        <StyledText variant='h1'>Chats</StyledText>
+        <StyledText variant='h1'>Pool Chats</StyledText>
         <View>
           {renderChats()}
         </View>

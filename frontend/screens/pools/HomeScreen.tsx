@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { useContext, useEffect, useState } from 'react';
 
-import { Modal, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
+import { Alert, Modal, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
 
 import Toast from 'react-native-toast-message';
 
@@ -21,8 +21,100 @@ import {
 } from '../../dataAccess/poolData';
 import { } from '@react-navigation/core';
 import * as Logging from '../../Logging';
-import { Loading } from '../../components/Display';
+import { BulletList, Loading } from '../../components/Display';
 import { FadeInView } from '../../components/Animation';
+import { PageSheetModal } from '../../components/Modal';
+import { getCheckedInStatus } from '../../dataAccess/users';
+import { getAuth } from 'firebase/auth';
+
+const auth = getAuth();
+
+interface WelcomeModalProps {
+    name: string;
+}
+function WelcomeModal(props: WelcomeModalProps) {
+    const { name } = props;
+    const theme = useContext(ThemeContext);
+    const [visible, setVisible] = useState(false);
+
+    const handleClose = () => setVisible(false);
+
+    const handleSignOut = async () => {
+        auth.signOut();
+    }
+
+    useEffect(() => {
+        (async () => {
+            try {
+                const resp = await getCheckedInStatus();
+                if (resp.errorSignOutMsg) {
+                    Alert.alert(
+                        resp.errorSignOutMsg,
+                        'You will now be signed out.',
+                        [
+                            {
+                                text: 'Sign Out',
+                                onPress: handleSignOut
+                            },
+                        ]
+                    )
+                }
+                if (!resp.checkedIn) setVisible(true);
+            } catch (error) {
+                Logging.Error(error);
+            }
+        })();
+    }, [])
+
+    const [firstName] = name.split(' ');
+
+    return (
+        <PageSheetModal
+            open={visible}
+            onClose={handleClose}
+            title=""
+        >
+            <ScrollView style={{ height: "100%" }}>
+                <View style={{ marginBottom: 150 }}>
+                    <Text variant="h1">Welcome, {firstName}!</Text>
+                    <Text variant="h2">Here's how MPool works:</Text>
+                    <Text variant="bodylarge">Pools</Text>
+                    <BulletList
+                        items={[
+                            "You can create a pool request in a season.",
+                            "After a request is created, we will attempt to find a match for you.",
+                            "We try to match you with other people traveling in the same direction to the same airport terminal who are leaving at the closest time and location to you.",
+                            "As we get closer to your departure date, we loosen up the matching criteria so it's more likely that you find a match.",
+                            "We'll send a notification when we find a match.",
+                            "When a match is found, you will see the location and time that is closest to everyone. You can accept the match or decline and wait for a new match.",
+                        ]}
+                        variant='bodylarge'
+                    />
+                    <Text variant="bodylarge">Profiles</Text>
+                    <BulletList
+                        items={[
+                            "Create your profile in the account screen.",
+                            "You can add a description to your profile",
+                            "You can also add content to your profile, such as your interests and what you're studying."
+                        ]}
+                        variant='bodylarge'
+                    />
+                    <View style={styles.buttonViewStyle}>
+                        <Button
+                            style={{
+                                marginTop: 20,
+                            }}
+                            onPress={handleClose}
+                            color="primary"
+                        >
+                            Let's go
+                        </Button>
+                    </View>
+                </View>
+            </ScrollView>
+        </PageSheetModal>
+    )
+}
 
 interface PoolSearchProps {
     navigation: RootTabScreenProps<'Pool'>['navigation'];
@@ -92,6 +184,7 @@ function HomeFeed(props: PoolSearchProps) {
             >
                 {loadingPoolSeasons ? <Loading shouldCenter defaultDelay /> : renderPoolSeasons()}
             </View>
+            <WelcomeModal name={user?.displayName || ""} />
         </ScrollView>
     );
 }
@@ -130,6 +223,10 @@ function PoolSeason(props: PoolSeasonData & PoolSeasonComponentProps) {
     };
 
     const handleViewPool = () => {
+        navigation.navigate('Pool', {
+            screen: 'PoolScreen',
+            params: { poolId: poolId }
+        } as never);
     };
 
     const handleCreateRequest = () => {
@@ -250,7 +347,13 @@ const styles = StyleSheet.create({
     poolSeasonButton: {
         width: "100%",
     },
-    poolSeasonComponent: {
-
+    buttonViewStyle: {
+        width: "100%",
+        padding: 15,
+        paddingLeft: 30,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        flexDirection: "row",
     }
 });

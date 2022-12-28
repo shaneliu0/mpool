@@ -29,6 +29,7 @@ export interface PoolSeasonDetails {
     id: number;
     displayTitle: string;
     destinations: PoolPlaceCategory[];
+    infoAlert?: string;
 }
 export interface PoolPlaceCategory {
     category: string;
@@ -130,14 +131,15 @@ export const validateUpdatePoolRequest = async (requestId: number, data: UpdateP
     return (resp.data as ValidateUpdatePoolRequestResp);
 }
 
-
+export type PoolMemberStatus = "potential";
 export interface PoolMember {
     userId: string;
     name: string;
     username?: string;
     photoUrl: string;
+    status?: PoolMemberStatus;
 }
-export type PoolStatus = "potential" | "confirmed";
+export type PoolStatus = "potential" | "confirmed" | "disabled";
 export interface PoolData {
     poolId: number;
     seasonName: string;
@@ -147,6 +149,7 @@ export interface PoolData {
     from: PoolPlace;
     to: PoolPlace;
     members: PoolMember[]
+    error?: string;
 }
 export const defaultPoolData: PoolData = {
     poolId: -1,
@@ -162,4 +165,44 @@ export const getPool = async (poolId: number): Promise<PoolData> => {
     const resp = await axios.get(`/pool/${poolId}`);
 
     return (resp.data as PoolData);
+}
+
+export const getPotentialPool = async (matchId: number): Promise<PoolData> => {
+    const resp = await axios.get(`/pool/potential/${matchId}`);
+
+    return (resp.data as PoolData);
+}
+
+export const acceptPotentialPool = async (matchId: number): Promise<void> => {
+    await axios.post(`/pool/potential/${matchId}/accept`);
+}
+
+export const declinePotentialPool = async (matchId: number): Promise<void> => {
+    await axios.post(`/pool/potential/${matchId}/decline`);
+}
+
+export interface MatchedPoolId {
+    poolId: number;
+    error?: string;
+}
+export const getMatchedPoolId = async (matchId: number): Promise<MatchedPoolId> => {
+    const resp = await axios.get(`/pool/potential/${matchId}/pool`);
+
+    return (resp.data as MatchedPoolId);
+}
+
+export interface LeavePoolData {
+    poolId: number;
+}
+export const leavePool = async (poolId: number): Promise<void> => {
+    await axios.delete(`/pool/${poolId}`);
+}
+
+export interface GetPoolStatusResp {
+    matchId?: number;
+}
+export const getPoolStatus = async (poolId: number): Promise<GetPoolStatusResp> => {
+    const resp = await axios.get(`/pool/${poolId}/status`);
+
+    return (resp.data as GetPoolStatusResp);
 }

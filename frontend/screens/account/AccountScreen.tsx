@@ -645,6 +645,7 @@ function AddContent(props: AddContentProps) {
                       position: "absolute",
                       left: "90%",
                       top: 15,
+                      backgroundColor: "transparent",
                     }}>
                       {loadingPrompts ? (
                         <MaterialIcons name="hourglass-full" size={24} color="black" />

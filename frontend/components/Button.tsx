@@ -8,6 +8,9 @@ import {
 import { ThemeContext } from '../App';
 import { ActivityIndicator, View } from 'react-native';
 import GLogo from '../assets/svgs/glogo.svg';
+import Colors from '../constants/Colors';
+
+type ColorTypes = "primary" | "secondary" | "danger";
 
 function FilledButton(props: StyledButtonProps) {
     const {
@@ -67,7 +70,6 @@ function OutlinedButton(props: StyledButtonProps) {
     } = props;
     const theme = useContext(ThemeContext);
 
-
     const forecolor = disabled ? "rgba(0,0,0,.06)" : theme.colors[color];
     return (
         <TouchableOpacity
@@ -104,7 +106,7 @@ function OutlinedButton(props: StyledButtonProps) {
 }
 
 interface StyledButtonProps {
-    color: "primary" | "secondary";
+    color: ColorTypes;
     variant?: "filled" | "outlined";
     children: React.ReactText,
     style?: StyleProp<any>,
@@ -129,7 +131,7 @@ export default function StyledButton(props: StyledButtonProps) {
 
 interface TextButtonProps {
     children: React.ReactText;
-    color?: "primary" | "secondary";
+    color?: ColorTypes;
     onPress: () => void;
 }
 export function TextButton(props: TextButtonProps) {

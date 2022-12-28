@@ -22,6 +22,14 @@ model User {
   profileId          Int
   PotentialMatch     PotentialMatch[]
   NotificationTokens NotificationTokens[]
+  UnreadMessage      UnreadMessage[]
+  CheckedIn          CheckedIn[]
+}
+
+model CheckedIn {
+  userId    String   @id
+  User      User     @relation(fields: [userId], references: [userId])
+  createdAt DateTime @default(now())
 }
 
 model Profile {
@@ -70,32 +78,37 @@ model NotificationTokens {
   expoPushToken String
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
+  disabled      Boolean  @default(false)
 }
 
 model Pool {
-  poolId         Int              @id @default(autoincrement())
-  name           String           @db.VarChar(255)
-  season         PoolSeason       @relation(fields: [seasonId], references: [id])
-  seasonId       Int
-  createdAt      DateTime         @default(now())
-  updatedAt      DateTime         @updatedAt
-  departTime     DateTime?
-  from           Place?           @relation(name: "from", fields: [fromId], references: [placeId])
-  fromId         String?
-  to             Place?           @relation(name: "to", fields: [toId], references: [placeId])
-  toId           String?
-  message        Message[]
-  PoolRequest    PoolRequest[]
-  PotentialMatch PotentialMatch[]
+  poolId           Int              @id @default(autoincrement())
+  season           PoolSeason       @relation(fields: [seasonId], references: [id])
+  seasonId         Int
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  departTime       DateTime?
+  from             Place?           @relation(name: "from", fields: [fromId], references: [placeId])
+  fromId           String?
+  to               Place?           @relation(name: "to", fields: [toId], references: [placeId])
+  toId             String?
+  disabled         Boolean          @default(false)
+  message          Message[]
+  PoolRequest      PoolRequest[]
+  PotentialMatch   PotentialMatch[] @relation("matched")
+  DerivedFromMatch PotentialMatch[] @relation("derived")
+  UnreadMessage    UnreadMessage[]
 }
 
 model PotentialMatch {
   potentialMatchId Int      @id @default(autoincrement())
   seasonId         Int
-  pool             Pool?    @relation(fields: [poolId], references: [poolId])
+  pool             Pool?    @relation(name: "matched", fields: [poolId], references: [poolId])
   poolId           Int?
-  user             User?    @relation(fields: [userId], references: [userId])
-  userId           String?
+  users            User[]
+  declined         Boolean  @default(false)
+  derivedPool      Pool?    @relation(name: "derived", fields: [derivedPoolId], references: [poolId])
+  derivedPoolId    Int?
   createdAt        DateTime @default(now())
 }
 
@@ -106,7 +119,17 @@ model Message {
   createdAt DateTime @default(now())
   pool      Pool     @relation(fields: [poolId], references: [poolId])
   poolId    Int
-  content   String   @db.VarChar(255)
+  content   String   @db.VarChar(1500)
+}
+
+model UnreadMessage {
+  userId    String
+  poolId    Int
+  User      User     @relation(fields: [userId], references: [userId])
+  Pool      Pool     @relation(fields: [poolId], references: [poolId])
+  createdAt DateTime @default(now())
+
+  @@unique([userId, poolId])
 }
 
 model Place {

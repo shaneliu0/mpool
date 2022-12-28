@@ -1,18 +1,15 @@
 import { AntDesign, MaterialCommunityIcons, MaterialIcons, } from "@expo/vector-icons";
-import React, { useEffect, useRef, useState } from "react";
-import { StyleSheet, ScrollView, View, TouchableOpacity } from "react-native";
+import React, { useEffect, useState } from "react";
+import { StyleSheet, ScrollView, View, TouchableOpacity, Alert } from "react-native";
 import { FadeInView } from "../../components/Animation";
-import { BulletList, DoubleText, ExpandableBox, Loading, PositionedMap } from "../../components/Display";
+import { DoubleText, Loading, PositionedMap } from "../../components/Display";
 import Text from "../../components/StyledText";
-import { defaultPoolData, getPool, PoolMember } from "../../dataAccess/poolData";
+import { declinePotentialPool, defaultPoolData, getPool, leavePool, PoolMember } from "../../dataAccess/poolData";
 import { RootTabScreenProps } from "../../types";
 import * as Conversion from '../../constants/Conversion';
 import { Avatar } from "native-base";
 import StyledButton from "../../components/Button";
 import * as Logging from '../../Logging';
-import { PopUpModal } from "../../components/Modal";
-import LottieView from 'lottie-react-native';
-import Animated, { useAnimatedStyle, useSharedValue } from "react-native-reanimated";
 
 interface NavigationProp {
     navigation: RootTabScreenProps<'Pool'>['navigation'];
@@ -20,8 +17,8 @@ interface NavigationProp {
     onCloseModal?: () => void;
 }
 
-function PoolMemberTile(props: PoolMember & NavigationProp) {
-    const { userId, name, photoUrl, username, navigation, embedMode, onCloseModal } = props;
+export function PoolMemberTile(props: PoolMember & NavigationProp) {
+    const { userId, name, photoUrl, username, status, navigation, embedMode, onCloseModal } = props;
 
     const handlePress = () => {
         if (embedMode && onCloseModal) {
@@ -73,104 +70,15 @@ function PoolMemberTile(props: PoolMember & NavigationProp) {
                     flexDirection: "column",
                     alignItems: "center",
                     justifyContent: "flex-end",
-                    marginRight: 150,
                 }}>
                     <Text variant="h2">{name}</Text>
                     {username && <Text variant="body">{username}</Text>}
                 </View>
-                <AntDesign name="arrowright" size={24} color="black" style={{ marginRight: 15, }} />
+                <View style={{ marginRight: 15 }}>
+                    {Conversion.getIconFromPoolMemberStatus(status)}
+                </View>
             </View>
         </TouchableOpacity>
-    )
-}
-
-interface PotentialPoolProps {
-    canSubmit: boolean;
-    onFinish: () => void;
-    poolId: number;
-    navigation: RootTabScreenProps<'Pool'>['navigation'];
-}
-function PotentialPool(props: PotentialPoolProps) {
-    const { canSubmit, onFinish, poolId, navigation } = props;
-    const [confirming, setConfirming] = useState(false);
-    const [modalOpen, setModalOpen] = useState(false);
-    const animation = useRef(null);
-
-    const handleModalClose = () => setModalOpen(false);
-
-    const handleConfirm = async () => {
-        if (!canSubmit) return alert("Please check the times and location!");
-        setConfirming(true);
-        try {
-            await new Promise<void>((resolve, reject) => setTimeout(() => resolve(), 1000));
-            setModalOpen(true);
-        } catch (e) {
-            Logging.Error(e);
-        } finally {
-            setConfirming(false);
-            onFinish
-        }
-    }
-
-    const handleGoToChat = () => {
-        navigation.navigate('Chat');
-        setTimeout(() => {
-            navigation.navigate('Chat', {
-                screen: 'SpecificChat',
-                params: {
-                    chatId: poolId
-                }
-            } as never);
-        }, 250);
-        handleModalClose();
-    }
-
-    return (
-        <>
-            <PopUpModal
-                onClose={handleModalClose}
-                open={modalOpen}
-                title="Successfully Joined!"
-            >
-                <View style={{
-                    flex: 1,
-                    alignItems: "center",
-                    justifyContent: "center",
-                }}>
-                    <LottieView
-                        autoPlay
-                        loop={false}
-                        ref={animation}
-                        source={require('../../assets/lottie/confirmationCheck.json')}
-                    />
-                </View>
-                <View style={{
-                    flex: 1,
-                    justifyContent: "center",
-                }}>
-                    <Text variant="h1">What's next:</Text>
-                    <BulletList
-                        variant="body"
-                        items={[
-                            "Your poolmates have been notified.",
-                            "Chat with them to finalize your meetup time and location."
-                        ]}
-                    />
-                    <StyledButton color="primary" onPress={handleGoToChat}>Go to chat</StyledButton>
-                </View>
-            </PopUpModal>
-            <View
-                style={{
-                    width: "100%",
-                    padding: 15,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                }}
-            >
-                <StyledButton onPress={handleConfirm} loading={confirming} color='primary' disabled={!canSubmit}>Confirm and Join Pool</StyledButton>
-            </View>
-        </>
     )
 }
 
@@ -187,10 +95,47 @@ export function PoolView(props: PoolViewProps) {
     const [pool, setPool] = useState(defaultPoolData);
     const [dateConfirmed, setDateConfirmed] = useState(false);
     const [locationConfirmed, setLocationConfirmed] = useState(false);
-    const [confirming, setConfirming] = useState(false);
+    const [leaving, setLeaving] = useState(false);
+    const [declining, setDeclining] = useState(false);
 
     const toggleDateConfirmed = () => setDateConfirmed(!dateConfirmed);
     const toggleLocationConfirmed = () => setLocationConfirmed(!locationConfirmed);
+
+    const handleLeavePool = () => {
+        Alert.alert(
+            'Leave Pool',
+            'Are you sure? You can\'t join back.',
+            [
+                {
+                    text: 'Cancel',
+                    style: 'cancel',
+                },
+                {
+                    text: 'Leave',
+                    style: 'destructive',
+                    onPress: async () => {
+                        setLeaving(true);
+                        try {
+                            await leavePool(poolId);
+                            onCloseModal && onCloseModal();
+                            navigation.navigate('Chat', {
+                                screen: "Chats"
+                            } as never);
+                            setTimeout(() => {
+                                navigation.navigate('Pool', {
+                                    screen: "Home"
+                                } as never);
+                            }, 1000);
+                        } catch (error) {
+                            Logging.Error(error);
+                        } finally {
+                            setLeaving(false);
+                        }
+                    }
+                }
+            ]
+        )
+    }
 
     const renderPoolMembers = () => {
         return pool.members.map((m, idx) =>
@@ -205,9 +150,13 @@ export function PoolView(props: PoolViewProps) {
     }
 
     const refreshPool = async () => {
-        const resp = await getPool(poolId);
-        setPool(resp);
-        setLoading(false);
+        try {
+            const resp = await getPool(poolId);
+            setPool(resp);
+            setLoading(false);
+        } catch (error) {
+            Logging.Error(error);
+        }
     };
 
     const canSubmit = dateConfirmed && locationConfirmed;
@@ -236,68 +185,71 @@ export function PoolView(props: PoolViewProps) {
             <ScrollView
                 style={[{ marginBottom: "auto", height: "100%", }, styles.fullWidth]}
             >
-                <Text variant="h1">{seasonName}</Text>
-                <Text variant="h2">{statusMessage}</Text>
-                {(status === "potential" ? (
-                    <>
-                        <TouchableOpacity onPress={toggleDateConfirmed}>
+                <View style={{ marginBottom: embedMode ? 100 : 25 }}>
+                    <Text variant="h1">{seasonName}</Text>
+                    <Text variant="h2">{statusMessage}</Text>
+                    {(status === "potential" ? (
+                        <>
+                            <TouchableOpacity onPress={toggleDateConfirmed}>
+                                <DoubleText
+                                    icon={<AntDesign name="clockcircle" size={30} color="black" />}
+                                    top={Conversion.formatTime(departDate)}
+                                    bottom={Conversion.formatDate(departDate)}
+                                    adornment={dateConfirmed ? checkedCheck : blankCheck}
+                                />
+                            </TouchableOpacity>
+                            <TouchableOpacity onPress={toggleLocationConfirmed}>
+                                <DoubleText
+                                    icon={<MaterialIcons name="place" size={35} color="black" />}
+                                    top={Conversion.truncateAndEllipsis(from.name, 20)}
+                                    bottom={Conversion.truncateAndEllipsis(to.name, 20)}
+                                    adornment={locationConfirmed ? checkedCheck : blankCheck}
+                                />
+                            </TouchableOpacity>
+                        </>
+                    ) : (
+                        <>
                             <DoubleText
                                 icon={<AntDesign name="clockcircle" size={30} color="black" />}
                                 top={Conversion.formatTime(departDate)}
                                 bottom={Conversion.formatDate(departDate)}
-                                adornment={dateConfirmed ? checkedCheck : blankCheck}
                             />
-                        </TouchableOpacity>
-                        <TouchableOpacity onPress={toggleLocationConfirmed}>
                             <DoubleText
                                 icon={<MaterialIcons name="place" size={35} color="black" />}
-                                top={from.name}
-                                bottom={to.name}
-                                adornment={locationConfirmed ? checkedCheck : blankCheck}
+                                top={Conversion.truncateAndEllipsis(from.name, 20)}
+                                bottom={Conversion.truncateAndEllipsis(to.name, 20)}
                             />
-                        </TouchableOpacity>
-                    </>
-                ) : (
-                    <>
-                        <DoubleText
-                            icon={<AntDesign name="clockcircle" size={30} color="black" />}
-                            top={Conversion.formatTime(departDate)}
-                            bottom={Conversion.formatDate(departDate)}
-                        />
-                        <DoubleText
-                            icon={<MaterialIcons name="place" size={35} color="black" />}
-                            top={from.name}
-                            bottom={to.name}
-                        />
-                    </>
-                ))}
-                <View style={{
-                    width: "100%",
-                    display: "flex",
-                    alignItems: "center",
-                    marginVertical: 15,
-                }}>
-                    {(() => {
-                        return (
-                            <PositionedMap
-                                fromCoords={from.coords}
-                                toCoords={to.coords}
-                            />
-                        )
-                    })()}
-                </View>
-                <View>
-                    <Text variant="h2">Pool Members</Text>
+                        </>
+                    ))}
                     <View style={{
-                        marginTop: 5,
+                        width: "100%",
+                        display: "flex",
+                        alignItems: "center",
+                        marginVertical: 15,
                     }}>
-                        {renderPoolMembers()}
+                        {(() => {
+                            return (
+                                <PositionedMap
+                                    fromCoords={from.coords}
+                                    toCoords={to.coords}
+                                />
+                            )
+                        })()}
+                    </View>
+                    <View>
+                        <Text variant="h2">Pool Members</Text>
+                        <View style={{
+                            marginTop: 5,
+                        }}>
+                            {renderPoolMembers()}
+                        </View>
+                    </View>
+                    <Text variant="h2">Actions</Text>
+                    <View style={styles.buttonViewStyle}>
+                        <StyledButton color="danger" loading={leaving} onPress={handleLeavePool}>Leave Pool</StyledButton>
                     </View>
                 </View>
             </ScrollView>
-            {(!embedMode && status === "potential") && (
-                <PotentialPool canSubmit={canSubmit} onFinish={refreshPool} poolId={poolId} navigation={navigation} />
-            )}
         </FadeInView>
     )
 }
@@ -326,6 +278,15 @@ const styles = StyleSheet.create({
         justifyContent: 'flex-start',
         paddingHorizontal: 15,
     },
+    buttonViewStyle: {
+        width: "100%",
+        padding: 15,
+        paddingLeft: 30,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        flexDirection: "row",
+    }
 });
 
 

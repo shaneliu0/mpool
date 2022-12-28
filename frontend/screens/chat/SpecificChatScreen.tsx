@@ -25,6 +25,9 @@ import { PageSheetModal } from '../../components/Modal';
 import Text from '../../components/StyledText';
 import { AntDesign } from '@expo/vector-icons';
 import { PoolView } from '../pools/PoolScreen';
+import { markPoolAsRead } from '../../dataAccess/chats';
+import { getPoolStatus } from '../../dataAccess/poolData';
+import { MatchedPoolView } from '../pools/MatchedPoolScreen';
 
 const db = getDatabase();
 
@@ -35,11 +38,20 @@ interface PoolPeekProps {
 function PoolPeek(props: PoolPeekProps) {
   const { navigation, poolId } = props;
   const [open, setOpen] = useState(false);
+  const [matchId, setMatchId] = useState<number | null>(null);
 
   const handleClose = () => setOpen(false);
   const handleOpen = () => setOpen(true);
 
   useEffect(() => {
+    (async () => {
+      try {
+        const pstatus = await getPoolStatus(poolId);
+        if (pstatus.matchId) setMatchId(pstatus.matchId);
+      } catch (error) {
+        Logging.Error(error);
+      }
+    })();
     navigation.setOptions({
       headerRight: () => (
         <TouchableOpacity onPress={handleOpen}>
@@ -56,12 +68,22 @@ function PoolPeek(props: PoolPeekProps) {
         onClose={handleClose}
         title='Current Pool'
       >
-        <PoolView 
-          navigation={navigation}
-          poolId={poolId} 
-          embedMode
-          onCloseModal={handleClose}
-        />
+        {matchId ? (
+          <MatchedPoolView
+            navigation={navigation}
+            matchId={matchId}
+            poolId={undefined}
+            embedMode
+            onCloseModal={handleClose}
+          />
+        ) : (
+          <PoolView
+            navigation={navigation}
+            poolId={poolId}
+            embedMode
+            onCloseModal={handleClose}
+          />
+        )}
       </PageSheetModal>
     </>
   );
@@ -95,6 +117,7 @@ export default function Chats({ route, navigation }: RootTabScreenProps<'Chat'>)
       mUnsub = onValue(chatListenRef, snap => {
         const data = snap.val();
         if (!data) return;
+        markPoolAsRead(chatId);
         setChats((previousMessages: IMessage[]) => {
           if (previousMessages.find(m => m._id === data._id)) {
             return previousMessages;

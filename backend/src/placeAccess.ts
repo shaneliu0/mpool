@@ -139,9 +139,8 @@ async function _reverseGeocodeToAddress(lat: number, lng: number) {
             key: process.env.GOOGLE_MAPS_API_KEY || "",
         }
     });
-
-    const address = res.data.results[0].formatted_address;
-    return address;
+    await updatePlace(res.data.results[0].place_id);
+    return res.data.results[0];
 }
 export async function reverseGeocodeToAddress(coords: { latitude: number, longitude: number }) {
     return await _reverseGeocodeToAddress(coords.latitude, coords.longitude);

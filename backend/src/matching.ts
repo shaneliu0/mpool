@@ -3,24 +3,47 @@ import { PoolRequest, Prisma } from "@prisma/client";
 import { getCorrectDate } from "./formatHelpers";
 import { getLatLngs, placeCatEnum } from "./placeAccess";
 import { PoolRequestData } from "./types/dataAccess/poolData";
-import { pushNotification } from "./notify";
+import { pushAndEmailPersistent } from "./notify";
 import ms from 'ms';
 import { logError } from "./logging";
 
+// the two user ids, sorted then joined.
+const duplicateCheck = new Set<string>();
+
 const refreshIntervalCallback = () => {
-    // refreshAndPotentiallyMatchAll();
+    refreshAndPotentiallyMatchAll();
     console.log('refreshed and matched all');
 }
-
+console.log('refreshed and matched all');
+refreshAndPotentiallyMatchAll();
 setInterval(refreshIntervalCallback, ms('30m'));
 
 export async function refreshAndPotentiallyMatchAll() {
+    // requests still need matching if they are not either:
+    // 1. already have a pool
+    // 2. have a potential match
+    duplicateCheck.clear();
     const unfulfilledRequests = await prisma.poolRequest.findMany({
         where: {
             season: {
                 active: true,
             },
             poolId: null,
+            user: {
+                PotentialMatch: {
+                    none: { // there are no potential matches that have a derivedpool that i
+                        AND: [
+                            { declined: false },
+                            {
+                                OR: [ // if one of these are true, the pool request does not need fulfilling.
+                                    { derivedPoolId: null },
+                                    { derivedPool: { disabled: false } },
+                                ],
+                            }
+                        ]
+                    }
+                }
+            }
         }
     });
 
@@ -42,18 +65,25 @@ async function onRequestMatchAttempt(requestId: number, curStrengthFloor: number
         if (prelimMatches.length === 0) return;
         const orderedMatches = getOrderedMatchesByStrength(req, prelimMatches);
         if (orderedMatches[0].strength < curStrengthFloor) return;
-
+        const matchHash = [req.userId, orderedMatches[0].userId].sort().join('-');
+        if (duplicateCheck.has(matchHash)) return;
+        duplicateCheck.add(matchHash);
         const newPotentialMatch = await prisma.potentialMatch.create({
             data: {
-                user: { connect: { userId: orderedMatches[0].userId } },
+                users: {
+                    connect: [
+                        { userId: req.userId },
+                        { userId: orderedMatches[0].userId },
+                    ]
+                },
                 seasonId: req.seasonId,
             }
         });
 
         const ntitle = `We have a potential pool for ${req.season.name}`;
         const nbody = `Match strength: ${orderedMatches[0].strength * 100}%. Decide if you want to join.`;
-
-        pushNotification(
+        console.log("Matched " + req.userId + " with " + orderedMatches[0].userId);
+        pushAndEmailPersistent(
             req.userId,
             ntitle,
             nbody,
@@ -61,7 +91,7 @@ async function onRequestMatchAttempt(requestId: number, curStrengthFloor: number
             { matchId: newPotentialMatch.potentialMatchId }
         );
 
-        pushNotification(
+        pushAndEmailPersistent(
             orderedMatches[0].userId,
             ntitle,
             nbody,
@@ -100,10 +130,10 @@ function getMatchStrengths(curReq: PoolRequest, matchedReqs: PoolReqWithDist[]):
 
         const distComponent = matchedReqs.map((r) => r.dist);
         for (let i = 0; i < distComponent.length; i++) {
-            if (distComponent[i] < 0.000001) {
-                distComponent[i] = 0.000001;
+            if (distComponent[i] < 0.001) {
+                distComponent[i] = 0.001;
             }
-            distComponent[i] = (1 / distComponent[i]) / 1000000;
+            distComponent[i] = (1 / distComponent[i]) / 1000;
         }
         const twoHours = hourOffset * 60 * 60 * 1000;
         const timeComponent = matchedReqs.map((r) => {

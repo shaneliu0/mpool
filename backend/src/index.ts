@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import bp from 'body-parser';
 import admin from 'firebase-admin';
+import sgMail from '@sendgrid/mail';
 import { PrismaClient } from '@prisma/client';
 import { Pool } from 'pg';
 const pool = new Pool({
@@ -18,6 +19,7 @@ admin.initializeApp({
     databaseURL: "https://your-firebase-project-default-rtdb.firebaseio.com"
 });
 
+// sgMail.setApiKey(process.env.SENDGRID_API_KEY || "");
 
 declare global {
     var prisma: PrismaClient;
@@ -29,6 +31,7 @@ import poolRouter from './routes/pool/pool';
 import chatRouter from './routes/chat';
 import userRouter from './routes/user';
 import notificationsRouter from './routes/notifications';
+import staticRouter from './routes/static';
 
 import './matching';
 
@@ -63,10 +66,7 @@ app.use('/pool', poolRouter);
 app.use('/chat', chatRouter);
 app.use('/user', userRouter);
 app.use('/notifications', notificationsRouter);
-
-app.get('/placesearch', async (req, res) => {
-    
-});
+app.use('/static', staticRouter);
 
 const port = process.env.PORT || 3001;
 app.listen(port, () => console.log('Server started on port ' + port));

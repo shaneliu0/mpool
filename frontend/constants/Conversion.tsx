@@ -1,4 +1,7 @@
+import { AntDesign, MaterialCommunityIcons } from "@expo/vector-icons";
 import moment from "moment";
+import { PoolMemberStatus } from "../dataAccess/poolData";
+import React from 'react';
 
 const TIME_MINUTES_PLACEHOLD = "--:-- --";
 const TIME_DATE_PLACEHOLD = "---, --- --";
@@ -20,4 +23,13 @@ export function removeInParentheses(text: string) {
 export function truncateAndEllipsis(text: string, len: number) {
     if (text.length <= len) return text;
     return text.substring(0, len) + "...";
+}
+
+export function getIconFromPoolMemberStatus(status: PoolMemberStatus | undefined): JSX.Element {
+    switch (status) {
+        case "potential":
+            return <MaterialCommunityIcons name="account-clock" size={24} color="black" />;
+        default:
+            return <AntDesign name="arrowright" size={24} color="black" style={{ marginRight: 15, }} />;
+    }
 }

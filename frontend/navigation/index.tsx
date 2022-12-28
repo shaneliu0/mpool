@@ -100,7 +100,8 @@ function BottomTabNavigator() {
         component={PoolNavigator}
         options={{
           headerShown: false,
-          tabBarIcon: ({ color }) => <TabBarIcon name="code" color={color} />,
+          tabBarIcon: ({ color }) => <TabBarIcon name="home" color={color} />,
+          tabBarLabel: "Home"
         }}
       />
       <BottomTab.Screen
@@ -108,7 +109,8 @@ function BottomTabNavigator() {
         component={ChatNavigator}
         options={{
           headerShown: false,
-          tabBarIcon: ({ color }) => <TabBarIcon name="code" color={color} />,
+          tabBarIcon: ({ color }) => <TabBarIcon name="comments-o" color={color} />,
+          tabBarLabel: "Pool Chat",
         }}
       />
       <BottomTab.Screen
@@ -116,7 +118,8 @@ function BottomTabNavigator() {
         component={AccountNavigator}
         options={{
           headerShown: false,
-          tabBarIcon: ({ color }) => <TabBarIcon name="code" color={color} />,
+          // @ts-ignore
+          tabBarIcon: ({ color }) => <TabBarIcon name="user-o" color={color} size={25} />,
         }}
       />
     </BottomTab.Navigator>

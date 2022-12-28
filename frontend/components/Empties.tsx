@@ -19,3 +19,17 @@ export function ChatEmpty() {
     </FadeInView>
   )
 }
+
+export function NotificationEmpty() {
+  return (
+    <FadeInView style={{
+      flex: 1,
+      alignItems: "center",
+      justifyContent: "center",
+      height: componentHeight,
+    }}>
+      <StyledText variant="bodylarge">Nothing here yet</StyledText>
+      <StyledText>When you receive a notification, it will show up here.</StyledText>
+    </FadeInView>
+  )
+}

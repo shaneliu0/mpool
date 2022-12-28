@@ -4,6 +4,7 @@ const tintColorDark = '#fff';
 const palette = {
   maize: '#FFCB05',
   blue: '#00274C',
+  red: '#C40233',
   white: '#FFFFFF',
   black: '#000000',
 }
@@ -13,10 +14,12 @@ export default {
     colors: {
       primary: palette.maize,
       secondary: palette.blue,
+      danger: palette.red,
     },
     complementColors: {
       primary: palette.black,
       secondary: palette.white,
+      danger: palette.white,
     },
     text: '#000',
     background: '#fff',
@@ -29,10 +32,12 @@ export default {
     colors: {
       primary: palette.maize,
       secondary: palette.blue,
+      danger: palette.red,
     },
     complementColors: {
       primary: palette.black,
       secondary: palette.white,
+      danger: palette.white,
     },
     text: '#fff',
     background: '#000',
