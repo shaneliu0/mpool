@@ -1,16 +1,12 @@
 import * as React from 'react';
 import { useState, useEffect } from 'react';
 
-import { ScrollView, StyleSheet, TouchableOpacity, Image, RefreshControl, Animated } from 'react-native';
+import { ScrollView, StyleSheet, TouchableOpacity, RefreshControl, Animated } from 'react-native';
 
 import {
-  Heading,
   Avatar
 } from 'native-base';
 
-
-import SkeletonContent from 'react-native-skeleton-content';
-import Toast from 'react-native-toast-message';
 
 import { Text, View } from '../../components/Themed';
 import StyledText from '../../components/StyledText';
@@ -66,66 +62,27 @@ function ChatContainer(props: ChatContainerProps) {
         padding: 8,
         marginRight: 15,
       }}>
-        <SkeletonContent
-          containerStyle={{
-            width: 300,
-            flex: 1,
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            padding: 20,
+        <Animated.View
+          style={{
+            opacity: fadeAnim,
+            width: "100%",
+            flexDirection: 'row'
           }}
-          layout={[
-            {
-              width: 60,
-              height: 60,
-              borderRadius: 30,
-            },
-            {
-              flexDirection: 'column',
-              marginRight: 10,
-              children: [
-                {
-                  width: '100%',
-                  height: '50%',
-                  marginBottom: 10,
-                },
-                {
-                  width: '50%',
-                  height: '20%',
-                  marginBottom: 10,
-                },
-                {
-                  width: 100,
-                  height: 20,
-                },
-              ],
-            },
-          ]}
-          isLoading={loading}
         >
-          <Animated.View
-            style={{
-              opacity: fadeAnim,
-              width: "100%",
-              flexDirection: 'row'
-            }}
-          >
-            <View style={{ width: 100, marginRight: 20 }}>
-              {(avatars && avatars.length) ? (
-                <Avatar.Group size="lg" max={2}>
-                  {renderAvatars()}
-                </Avatar.Group>
-              ) : null}
-            </View>
-            <View style={[styles.nested, { marginRight: 0, marginLeft: 0 }]}>
-              <Text style={[styles.normalText, styles.boldText]}>{name}</Text>
-              <Text style={[styles.normalText, { marginTop: 5 }]}>{lastMessage}</Text>
-              {lastMessageTime && <Text style={[styles.normalText, styles.lightText]}>{lastMessageTime}</Text>}
-            </View>
-            <Entypo name="chevron-right" size={24} color="black" />
-          </Animated.View>
-        </SkeletonContent>
+          <View style={{ width: 100, marginRight: 20 }}>
+            {(avatars && avatars.length) ? (
+              <Avatar.Group size="lg" max={2}>
+                {renderAvatars()}
+              </Avatar.Group>
+            ) : null}
+          </View>
+          <View style={[styles.nested, { marginRight: 0, marginLeft: 0 }]}>
+            <Text style={[styles.normalText, styles.boldText]}>{name}</Text>
+            <Text style={[styles.normalText, { marginTop: 5 }]}>{lastMessage}</Text>
+            {lastMessageTime && <Text style={[styles.normalText, styles.lightText]}>{lastMessageTime}</Text>}
+          </View>
+          <Entypo name="chevron-right" size={24} color="black" />
+        </Animated.View>
       </View>
     </TouchableOpacity>
   )
@@ -160,7 +117,8 @@ export default function Chats({ route, navigation }: RootTabScreenProps<'Chat'>)
   }, [])
 
   const renderChats = () => {
-    const arr = (!loading) ? chats : new Array(6).fill({});
+    if (loading) return null;
+    const arr = (!loading) ? chats : [];
 
     if (!arr.length) {
       return (
