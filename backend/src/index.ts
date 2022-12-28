@@ -2,17 +2,8 @@ import express from 'express';
 import cors from 'cors';
 import bp from 'body-parser';
 import admin from 'firebase-admin';
-import sgMail from '@sendgrid/mail';
+// import sgMail from '@sendgrid/mail';
 import { PrismaClient } from '@prisma/client';
-import { Pool } from 'pg';
-const pool = new Pool({
-    user: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
-    database: process.env.DB_DATABASE,
-    host: process.env.DB_HOST,
-    port: 5432,
-    idleTimeoutMillis: 0
-})
 
 admin.initializeApp({
     credential: admin.credential.cert(require('./serviceAccountKey.json')),

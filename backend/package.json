@@ -3,8 +3,11 @@
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
+  "engines": {
+    "node": "16.13.0"
+  },
   "scripts": {
-    "start": "cd src && ts-node index.ts PORT=80",
+    "start": "cd src && ts-node -T index.ts PORT=80",
     "dev": "cd src && nodemon index.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -20,14 +23,12 @@
     "firebase-admin": "^10.0.0",
     "moment": "^2.29.1",
     "ms": "^2.1.3",
-    "pg": "^8.7.1",
-    "pg-format": "^1.0.4"
+    "ts-node": "^10.9.1"
   },
   "devDependencies": {
-    "@types/cors": "^2.8.12",
+    "@types/cors": "^2.8.13",
     "@types/ms": "^0.7.31",
-    "@types/pg": "^8.6.1",
-    "@types/pg-format": "^1.0.2",
-    "prisma": "^4.4.0"
+    "prisma": "^4.4.0",
+    "typescript": "^4.9.4"
   }
 }

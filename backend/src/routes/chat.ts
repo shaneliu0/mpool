@@ -1,17 +1,11 @@
 import express from 'express';
-import { Pool } from 'pg';
-import format from 'pg-format';
 import admin from 'firebase-admin';
-import { UserRecord } from 'firebase-admin/lib/auth/user-record';
-import { AvailableChat } from '../types';
 import moment from 'moment';
-import { User } from '@prisma/client';
 import { logError, resError } from '../logging';
-import { batchSendPushNotifications, pushAndEmailPersistent } from '../notify';
+import { batchSendPushNotifications } from '../notify';
 import { getAllPoolMembers } from './pool/pool';
 import { checkUserMiddleware } from '../permissions/userPerms';
 
-const auth = admin.auth();
 const db = admin.database();
 
 const prisma = global.prisma;
