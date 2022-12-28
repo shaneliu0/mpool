@@ -7,12 +7,12 @@ import {
     useTheme, Box
 } from 'native-base';
 
-import * as Google from 'expo-google-app-auth';
-import Toast from 'react-native-toast-message';
+import * as Google from 'expo-auth-session/providers/google';
+import * as WebBrowser from 'expo-web-browser';
 import firebase from 'firebase/compat/app';
 import 'firebase/compat/auth';
 
-import { getAuth, signInWithCredential, GoogleAuthProvider } from "firebase/auth";
+import { getAuth, signInWithCredential, GoogleAuthProvider, signInWithCustomToken } from "firebase/auth";
 import PagerView from 'react-native-pager-view';
 import Text from '../components/StyledText';
 import Layout from '../constants/Layout';
@@ -20,6 +20,8 @@ import StyledButton, { SignInWithGoogleButton, TextButton } from '../components/
 import Animated, { runOnJS, useAnimatedStyle, useSharedValue, withDelay, withSpring, withTiming } from 'react-native-reanimated';
 import StartPoly1 from '../assets/svgs/startpoly1.svg';
 import StartPoly2 from '../assets/svgs/startpoly2.svg';
+
+WebBrowser.maybeCompleteAuthSession();
 
 if (Platform.OS === 'web') {
     const firebaseConfig = {
@@ -115,7 +117,7 @@ interface FadeInOutButtonProps {
 function FadeInOutButton(props: FadeInOutButtonProps) {
     const { show, onPress, children, altShow } = props;
     const [showAlt, setShowAlt] = useState(false);
-    const opacity = useSharedValue(0);
+    const opacity = useSharedValue(0.01);
 
     const animatedViewStyle = useAnimatedStyle(() => {
         return {
@@ -137,7 +139,6 @@ function FadeInOutButton(props: FadeInOutButtonProps) {
         }
     }, [show]);
 
-
     return (
         <Animated.View style={animatedViewStyle}>
             {showAlt ? (
@@ -157,36 +158,35 @@ export default function SignInScreen(props: any) {
     const [lockScroll, setLockScroll] = useState(false);
     const [showLogin, setShowLogin] = useState(false);
 
-    const onLoginPress = async () => {
-        // First- obtain access token from Expo's Google API
-        const res = await Google.logInAsync({
-            iosClientId: "YOUR_OAUTH_CLIENT_ID.apps.googleusercontent.com",
-            androidClientId: "YOUR_OAUTH_CLIENT_ID.apps.googleusercontent.com",
-            // scopes: ['profile', 'email']
-        });
+    const [request, response, promptAsync] = Google.useAuthRequest({
+        responseType: "id_token",
+        iosClientId: "YOUR_OAUTH_CLIENT_ID.apps.googleusercontent.com",
+        androidClientId: "YOUR_OAUTH_CLIENT_ID.apps.googleusercontent.com", // invalid
+        expoClientId: "YOUR_OAUTH_CLIENT_ID.apps.googleusercontent.com",
+    });
 
-        if (res.type === 'success') {
-            const { idToken } = res;
-
-            const credential = GoogleAuthProvider.credential(idToken);
-            console.log(credential);
-            try {
-                await signInWithCredential(auth, credential)
-            } catch (error: any) {
-                // Handle Errors here.
-                const errorCode = error.code;
-                const errorMessage = error.message;
-                // The email of the user's account used.
-                console.log(errorCode, errorMessage);
-                alert('Something went wrong while authenticating with Google.');
-            }
-        } else {
-            Toast.show({
-                type: 'error',
-                text1: 'Something went wrong.'
-            });
-        }
+    const onLoginPress = () => {
+        promptAsync();
     }
+    useEffect(() => {
+        (async () => {
+            if (response?.type === 'success') {
+                const token = response.params.id_token;
+                try {
+                    // sign in with firebase
+                    const credential = GoogleAuthProvider.credential(token);
+                    await signInWithCredential(auth, credential);
+                } catch (error: any) {
+                    // Handle Errors here.
+                    const errorCode = error.code;
+                    const errorMessage = error.message;
+                    // The email of the user's account used.
+                    console.log(errorCode, errorMessage);
+                    alert('Something went wrong while authenticating with Google.');
+                }
+            }
+        })();
+    }, [response]);
 
     const initiateGoToSignIn = () => {
         setLockScroll(true);
@@ -201,7 +201,6 @@ export default function SignInScreen(props: any) {
                 triangleOffsets.value = withTiming(0, timingOptions);
             }, 500);
         }
-
         pagerOpacity.value = withTiming(0, timingOptions, () => {
             runOnJS(delayedShowLogin)();
         });
@@ -234,6 +233,11 @@ export default function SignInScreen(props: any) {
     const triangleOffsets = useSharedValue(200);
 
     const animatedPagerStyle = useAnimatedStyle(() => {
+        return {
+            opacity: pagerOpacity.value,
+        }
+    });
+    const animatedPagerBottomStyle = useAnimatedStyle(() => {
         return {
             opacity: pagerOpacity.value,
         }
@@ -289,15 +293,17 @@ export default function SignInScreen(props: any) {
                         <StartPoly1 />
                     </Animated.View>
                 </View>
-                <Animated.View style={[
-                    animatedStartForegroundStyle, {
-                        height: "100%",
-                        width: "100%",
-                        flex: 1,
-                        alignItems: "flex-start",
-                        justifyContent: "space-between",
-                        paddingHorizontal: 35,
-                    }]}>
+                <Animated.View
+                    key={0}
+                    style={[
+                        animatedStartForegroundStyle, {
+                            height: "100%",
+                            width: "100%",
+                            flex: 1,
+                            alignItems: "flex-start",
+                            justifyContent: "space-between",
+                            paddingHorizontal: 35,
+                        }]}>
                     <View></View>
                     <View></View>
                     <View style={{
@@ -317,7 +323,7 @@ export default function SignInScreen(props: any) {
                     </View>
                     <Animated.View style={[animatedStartBottomButtonsStyle, { backgroundColor: "transparent" }]}>
                         <View style={{ marginBottom: 58, backgroundColor: "transparent", }}>
-                            <SignInWithGoogleButton onPress={onLoginPress} />
+                            <SignInWithGoogleButton onPress={onLoginPress} disabled={!request} />
                         </View>
                         <View style={{
                             height: 50,
@@ -379,7 +385,11 @@ export default function SignInScreen(props: any) {
                     />
                 </Animated.View>
             </PagerView>
-            <Animated.View style={[animatedPagerStyle, styles.pagerBottom]}>
+            <Animated.View
+                style={[
+                    animatedPagerBottomStyle,
+                    styles.pagerBottom
+                ]}>
                 <View style={styles.pagerBottomItem}>
                     <FadeInOutButton show={curPage !== 0} onPress={() => pagerRef.current?.setPage(curPage - 1)}>Back</FadeInOutButton>
                 </View>

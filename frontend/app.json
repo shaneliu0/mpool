@@ -1,8 +1,8 @@
 {
   "expo": {
-    "name": "mpool",
+    "name": "MPool",
     "slug": "mpool",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "orientation": "portrait",
     "icon": "./assets/images/icongraphic.png",
     "scheme": "myapp",
@@ -26,7 +26,8 @@
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
-      }
+      },
+      "package": "com.katori.mpool"
     },
     "web": {
       "favicon": "./assets/images/favicon.png"

@@ -151,9 +151,10 @@ export function TextButton(props: TextButtonProps) {
 
 interface SignInWithGoogleButtonProps {
     onPress: () => void;
+    disabled: boolean;
 }
 export function SignInWithGoogleButton(props: SignInWithGoogleButtonProps) {
-    const { onPress, } = props;
+    const { onPress, disabled } = props;
 
     return (
         <TouchableOpacity
@@ -167,12 +168,13 @@ export function SignInWithGoogleButton(props: SignInWithGoogleButtonProps) {
                 backgroundColor: "#FFFFFF",
             }}
             onPress={onPress}
+            disabled={disabled}
         >
             <GLogo style={{ margin: 20, width: 30, height: 30, }} />
             <Text style={{
                 color: "#797979",
                 fontWeight: "500",
-                fontFamily: "Roboto",
+                // fontFamily: "Roboto",
                 fontSize: 20,
                 lineHeight: 23,
                 marginRight: 65,

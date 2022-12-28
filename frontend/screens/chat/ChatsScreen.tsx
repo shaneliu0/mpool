@@ -16,6 +16,7 @@ import { Entypo } from '@expo/vector-icons';
 import axios from 'axios';
 import * as Logging from '../../Logging';
 import { ChatEmpty } from '../../components/Empties';
+import { Loading } from '../../components/Display';
 
 interface ChatContainerProps {
   chat: AvailableChat;
@@ -138,14 +139,15 @@ export default function Chats({ route, navigation }: RootTabScreenProps<'Chat'>)
     })
   }
 
+  if (loading) return <Loading defaultDelay shouldCenter />
+
   return (
     <View style={styles.containerNoCenter}>
       <ScrollView
-        style={styles.chats}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
         <StyledText variant='h1'>Pool Chats</StyledText>
-        <View>
+        <View style={styles.chatsInnerView}>
           {renderChats()}
         </View>
       </ScrollView>
@@ -208,8 +210,8 @@ const styles = StyleSheet.create({
   chat: {
     height: 100
   },
-  chats: {
-
+  chatsInnerView: {
+    paddingTop: 15,
   },
   nested: {
     flexDirection: 'column',

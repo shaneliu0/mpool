@@ -5635,21 +5635,6 @@ expo-font@~10.0.3:
     expo-modules-core "~0.4.4"
     fontfaceobserver "^2.1.0"
 
-expo-google-app-auth@^9.0.0:
-  version "9.0.0"
-  resolved "https://registry.npmjs.org/expo-google-app-auth/-/expo-google-app-auth-9.0.0.tgz"
-  integrity sha512-UzL1N8dd2Cm84FkgWCbkkYJv79ptFLescGaOpoJRXlnXVEkmz/iQ7zETmwOsIcq5ISAPXvgrSMb1LniqjgmnGQ==
-  dependencies:
-    expo-app-auth "~11.0.3"
-
-expo-google-sign-in@~10.0.3:
-  version "10.0.3"
-  resolved "https://registry.npmjs.org/expo-google-sign-in/-/expo-google-sign-in-10.0.3.tgz"
-  integrity sha512-hooZHs2UpbOrwtwsgpU/i1Ic06tizx+K8GLbL0lKuLh+Cos53vSYP5HQEZs/2sy2p897XwdEX4ADj+ZyKIdFJw==
-  dependencies:
-    expo-modules-core "~0.4.4"
-    invariant "^2.2.4"
-
 expo-keep-awake@~10.0.0:
   version "10.0.0"
   resolved "https://registry.npmjs.org/expo-keep-awake/-/expo-keep-awake-10.0.0.tgz"

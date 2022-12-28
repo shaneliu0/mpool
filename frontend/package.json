@@ -34,8 +34,6 @@
     "expo-device": "~4.0.3",
     "expo-firebase-analytics": "^5.0.3",
     "expo-font": "~10.0.3",
-    "expo-google-app-auth": "^9.0.0",
-    "expo-google-sign-in": "~10.0.3",
     "expo-linking": "~2.4.2",
     "expo-notifications": "~0.13.3",
     "expo-random": "~12.0.1",
