@@ -262,32 +262,35 @@ export function DateTimeSelector(props: DateTimeSelectorProps) {
 
     if (Platform.OS === 'ios') {
         return (
-            <HStack style={{ width: 450 }} space={3} alignItems="center">
-                <DateTimePicker
-                    minimumDate={new Date()}
-                    testID="dateTimePicker"
-                    value={value}
-                    mode={'date'}
-                    display="default"
-                    onChange={onSelect}
-                    style={styles.datePicker}
-                    minuteInterval={minuteInterval}
-                />
-                <DateTimePicker
-                    minimumDate={new Date()}
-                    testID="dateTimePicker"
-                    value={value}
-                    mode={'time'}
-                    display="default"
-                    onChange={onSelect}
-                    style={styles.datePicker}
-                    minuteInterval={minuteInterval}
-                />
-            </HStack>
+            <View>
+                <HStack style={{ width: 450 }} space={3} alignItems="center">
+                    <DateTimePicker
+                        minimumDate={new Date()}
+                        testID="dateTimePicker"
+                        value={value}
+                        mode={'date'}
+                        display="default"
+                        onChange={onSelect}
+                        style={styles.datePicker}
+                        minuteInterval={minuteInterval}
+                    />
+                    <DateTimePicker
+                        minimumDate={new Date()}
+                        testID="dateTimePicker"
+                        value={value}
+                        mode={'time'}
+                        display="default"
+                        onChange={onSelect}
+                        style={styles.datePicker}
+                        minuteInterval={minuteInterval}
+                    />
+                </HStack>
+                <Text style={{ fontWeight: "300", marginLeft: 15 }}>This time is in your local device timezone.</Text>
+            </View>
         )
     } else if (Platform.OS === "android") {
         return (
-            <>
+            <View>
                 <HStack space={3} alignItems="center" style={{ marginLeft: 15 }}>
                     {/* date selector */}
                     <Button
@@ -342,7 +345,8 @@ export function DateTimeSelector(props: DateTimeSelectorProps) {
                         />
                     )}
                 </HStack>
-            </>
+                <Text style={{ fontWeight: "300", marginLeft: 15 }}>This time is in your local device timezone.</Text>
+            </View>
         )
     } else {
         return <Text>Unknown</Text>

@@ -56,6 +56,7 @@ router.post('/register', async (req, res) => {
             update: { expoPushToken, disabled: false },
             create: { User: { connect: { userId: user.uid } }, expoPushToken, disabled: false }
         });
+        res.sendStatus(200);
     } catch (e) {
         resError(res, e);
     }

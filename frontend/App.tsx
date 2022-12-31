@@ -155,11 +155,11 @@ async function registerForPushNotificationsAsync(userId: string) {
       finalStatus = status;
     }
     if (finalStatus !== 'granted') {
-      alert('Failed to get push token for push notification!');
+      alert("Notifications aren't enabled! You might miss important notifications. Please enable notifications in settings.");
       return;
     }
     token = (await Notifications.getExpoPushTokenAsync({
-      experienceId: `@${userId}/mpool`
+      experienceId: `@sliu88/mpool`
     })).data;
     registerNotifications({
       expoPushToken: token,

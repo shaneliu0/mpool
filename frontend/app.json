@@ -2,7 +2,7 @@
   "expo": {
     "name": "MPool",
     "slug": "mpool",
-    "version": "1.0.1",
+    "version": "1.0.10",
     "orientation": "portrait",
     "icon": "./assets/images/icongraphic.png",
     "scheme": "myapp",
@@ -19,8 +19,11 @@
       "**/*"
     ],
     "ios": {
-      "supportsTablet": true,
-      "bundleIdentifier": "com.katori.mpool"
+      "supportsTablet": false,
+      "bundleIdentifier": "com.katori.mpool",
+      "infoPlist": {
+        "NSPhotoLibraryUsageDescription": "This app uses photos to upload images to your profile."
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -37,6 +40,7 @@
       "eas": {
         "projectId": "YOUR_EAS_PROJECT_ID"
       }
-    }
+    },
+    "plugins": ["expo-apple-authentication"]
   }
 }

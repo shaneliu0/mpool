@@ -4,6 +4,7 @@ import { PoolRequestData, PoolSeasonData, PoolSeasonDetails, SubmitPoolRequestRe
 import moment from 'moment';
 import { getSeasonDestinations, placeCatEnum, updatePlace } from '../../placeAccess';
 import { removeTextInParenthesis } from '../../formatHelpers';
+import { onRequestMatchAttempt } from '../../matching';
 
 const prisma = global.prisma;
 
@@ -47,11 +48,11 @@ router.get('/', async (req:any, res) => {
                 if (poolReq.poolId) {
                     poolId = poolReq.poolId;
                     collapsedBodyText = `Your request for ${departDate} has been fulfilled...`;
-                    expandedBodyText = `Fulfilled request to arrive at ${removeTextInParenthesis(poolReq.to.name)} on ${departDate} at ${moment(poolReq.departTime).format("h:mm a")}.`;
+                    expandedBodyText = `Fulfilled request to arrive at ${removeTextInParenthesis(poolReq.to.name)} on ${departDate} at ${moment(poolReq.departTime).format("h:mm a")} EST.`;
                 } else {
                     requestId = poolReq.requestId;
                     collapsedBodyText = `You have an outgoing request for ${departDate}...`;
-                    expandedBodyText = `Outgoing request to arrive at ${removeTextInParenthesis(poolReq.to.name)} on ${departDate} at ${moment(poolReq.departTime).format("h:mm a")}.`;
+                    expandedBodyText = `Outgoing request to arrive at ${removeTextInParenthesis(poolReq.to.name)} on ${departDate} at ${moment(poolReq.departTime).format("h:mm a")} EST.`;
                 }
             } else {
                 collapsedBodyText = `You haven't created a request for this yet...`;
@@ -143,7 +144,7 @@ router.post('/:seasonId', async (req, res) => {
                 to: { connect: { placeId: toId }},
             }
         });
-
+        onRequestMatchAttempt(newRequest.requestId);
         return res.json({
             requestId: newRequest.requestId
         } as SubmitPoolRequestResp);

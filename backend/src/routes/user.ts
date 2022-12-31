@@ -17,19 +17,20 @@ router.get('/updatevalidate', async (req, res) => {
     try {
         const {
             name,
-            picture,
+            // picture,
             email,
             uid
         } = user;
+        const picture = `https://avatars.dicebear.com/api/bottts/${uid}.png`;
         const potentialProfileId = await prisma.profile.findFirst({
             where: {
                 User: { some: { userId: user.uid }}
             }
-        })
+        });
         await prisma.user.upsert({
             where: { userId: user.uid },
             create: {
-                displayName: name,
+                displayName: name || "",
                 email: email || "",
                 photoUrl: picture || "",
                 userId: uid,
@@ -45,7 +46,7 @@ router.get('/updatevalidate', async (req, res) => {
                 }
             },
             update: {
-                displayName: name,
+                displayName: name || "",
                 email: email || "",
                 photoUrl: picture || "",
                 userId: uid,
@@ -96,35 +97,7 @@ router.post('/profile', async (req:any, res) => {
     const profile: Profile = req.body;
 
     try {
-        // validate incoming profile data
-        if (!profile) {
-            return res.status(400).json({ error: "Invalid profile data" });
-        }
-        if (!profile.name || profile.name.length > 50) {
-            return res.status(400).json({ error: "Invalid name" });
-        }
-        if (!profile.description || profile.description.length > 500) {
-            return res.status(400).json({ error: "Invalid description" });
-        }
-        if (!profile.content || profile.content.length > 10) {
-            return res.status(400).json({ error: "Invalid content" });
-        }
-        for (const block of profile.content) {
-            if (!block.heading || block.heading.length > 300) {
-                return res.status(400).json({ error: "Invalid content heading" });
-            }
-            if (block.text && block.text.length > 1000) {
-                return res.status(400).json({ error: "Invalid content text" });
-            }
-            if (block.tiles && block.tiles.length > 10) {
-                return res.status(400).json({ error: "Invalid content tiles" });
-            }
-            for (const tile of block.tiles ?? []) {
-                if (tile.length > 50) {
-                    return res.status(400).json({ error: "Invalid content tile" });
-                }
-            }
-        }
+        if (JSON.stringify(profile).length > 10000) return res.sendStatus(400);
 
         // create new profile
         const newProfile = await prisma.profile.create({
@@ -252,7 +225,7 @@ async function getProfile(requesterId: string, requestedId?: string): Promise<Pr
     // if shared pool then display full name. otherwise, only display first name.
     const name = sharedPool ? firebaseUser.displayName : firebaseUser.displayName?.split(' ')[0];
     return {
-        photoUrl: firebaseUser.photoURL ?? "",
+        photoUrl: user.photoUrl ?? firebaseUser.photoURL ?? "",
         name: name ?? "",
         description: user.Profile.description,
         content: user.Profile.content.map(c => {

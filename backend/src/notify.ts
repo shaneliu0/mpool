@@ -68,6 +68,7 @@ export async function pushAndEmailPersistent(recipientId: string, title: string,
             title: title,
             body: body,
             data: payload,
+            sound: "default",
         }]);
 
         await handleEmailNotifications([{
@@ -100,6 +101,7 @@ export async function batchSendPushNotifications(recipientIds: string[], title: 
                 to: pushToken.expoPushToken,
                 title: title,
                 body: body,
+                sound: "default",
             });
         }
 

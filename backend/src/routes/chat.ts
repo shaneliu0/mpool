@@ -43,7 +43,7 @@ router.get('/', async (req: any, res) => {
             where: {
                 PoolRequest: {
                     some: {
-                        userId: user.userId
+                        userId: user.uid
                     }
                 },
                 disabled: false,

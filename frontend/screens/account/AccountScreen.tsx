@@ -477,6 +477,9 @@ function AddContent(props: AddContentProps) {
     })
   };
   const createEdit = () => {
+    if (notChosenPrompt) {
+      return Alert.alert("Please choose a prompt first.")
+    }
     initiateClose();
     setTimeout(() => {
       handleAdd(value);
@@ -488,7 +491,7 @@ function AddContent(props: AddContentProps) {
   const handlePromptsOpen = () => {
     if (!prompts) return;
     translateOffsets.value = withTiming(200, timingOptions);
-    opacities.value = withTiming(0, timingOptions);
+    opacities.value = withTiming(0.01, timingOptions);
     setTimeout(() => {
       setPromptsOpen(true);
     }, BLUR_DURATION);
@@ -506,7 +509,7 @@ function AddContent(props: AddContentProps) {
   const translateOffsets = useSharedValue(200);
   const opacities = useSharedValue(0);
   const promptsScale = useSharedValue(initialPromptsOpacity);
-  const promptsOpacity = useSharedValue(0);
+  const promptsOpacity = useSharedValue(1);
   const tilesOpacity = useSharedValue(1);
 
 
@@ -598,7 +601,7 @@ function AddContent(props: AddContentProps) {
   } else if (chosenPromptIdx !== -1) {
     dname = prompts[chosenPromptIdx].title;
   } else {
-    dname = "[tap to edit]";
+    dname = "[tap to select]";
   }
 
   const {
@@ -619,7 +622,7 @@ function AddContent(props: AddContentProps) {
           <View style={styles.transparent}>
             {promptsOpen ? (
               <>
-                <Animated.View style={animatedPromptsViewStyle}>
+                <Animated.View style={animatedPromptsViewStyle} key={0}>
                   <View style={{
                     width: "100%",
                     backgroundColor: "transparent",
@@ -638,7 +641,7 @@ function AddContent(props: AddContentProps) {
               </>
             ) : (
               <>
-                <Animated.View style={animatedHeaderViewStyle}>
+                <Animated.View style={animatedHeaderViewStyle} key={1}>
                   <TouchableOpacity style={{ flexDirection: "row", alignItems: "center", }} onPress={handlePromptsOpen}>
                     <Text variant="h1">{dname}</Text>
                     <View style={{
@@ -674,7 +677,7 @@ function AddContent(props: AddContentProps) {
                 </Animated.View>
                 <Animated.View style={[animatedButtonsViewStyle, styles.editCancel]}>
                   <Button style={styles.editCancelItem} color='primary' variant='outlined' onPress={initiateClose}>Cancel</Button>
-                  <Button style={styles.editCancelItem} color='primary' disabled={notChosenPrompt} onPress={notChosenPrompt ? () => undefined : createEdit}>Add</Button>
+                  <Button style={styles.editCancelItem} color='primary' disabled={notChosenPrompt} onPress={createEdit}>Add</Button>
                 </Animated.View>
               </>
             )}
@@ -864,7 +867,7 @@ function EditProfile(props: EditProfileProps) {
         })()}
       >
         <ScrollView style={{ height: "100%", }} ref={scrollRef}>
-          <Animated.View style={[animatedContentViewStyle, { marginBottom: somethingOpen ? 400 : 200, }]}>
+          <Animated.View style={[animatedContentViewStyle, { marginBottom: somethingOpen ? 800 : 200, }]}>
             <View
               style={{
                 width: "100%",
@@ -874,18 +877,14 @@ function EditProfile(props: EditProfileProps) {
                 justifyContent: "center",
               }}
             >
-              <TouchableOpacity
-                onPress={() => {
-                  Alert.alert('Your profile image and name are synced with your Google account. If you changed it recently, it will update here after 24-48 hours.')
-                }}
-              >
+              <View>
                 <Avatar
                   source={{
                     uri: photoUrl,
                   }}
                   size="20"
                 />
-              </TouchableOpacity>
+              </View>
             </View>
             <View style={{
               flex: 1,
@@ -1036,7 +1035,7 @@ const styles = StyleSheet.create({
   },
   contentEditBlur: {
     flex: 1,
-    paddingTop: 200,
+    paddingTop: 150,
     height: 1000,
     paddingHorizontal: 10,
     zIndex: 99,

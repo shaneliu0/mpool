@@ -1,3 +1,4 @@
+// const allowAll = Boolean(process.env.ALLOW_ALL);
 const allowAll = true;
 const allowedEmailEndings = [ "umich.edu" ];
 export const checkUserAllowed = async (userId: string) => {
@@ -11,7 +12,6 @@ export const checkUserAllowed = async (userId: string) => {
     const email = user.email;
     if (!email) return false;
     const emailEnding = email.split("@")[1];
-    console.log(emailEnding);
     return allowedEmailEndings.includes(emailEnding);
 }
 

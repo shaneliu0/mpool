@@ -23,39 +23,47 @@ export async function refreshAndPotentiallyMatchAll() {
     // 1. already have a pool
     // 2. have a potential match
     duplicateCheck.clear();
-    const unfulfilledRequests = await prisma.poolRequest.findMany({
-        where: {
-            season: {
-                active: true,
-            },
-            poolId: null,
-            user: {
-                PotentialMatch: {
-                    none: { // there are no potential matches that have a derivedpool that i
-                        AND: [
-                            { declined: false },
-                            {
-                                OR: [ // if one of these are true, the pool request does not need fulfilling.
-                                    { derivedPoolId: null },
-                                    { derivedPool: { disabled: false } },
-                                ],
-                            }
-                        ]
+    const activeSeasons = await prisma.poolSeason.findMany({
+        where: { active: true },
+    });
+    const unfulfilledRequests: any[] = [];
+    for (const season of activeSeasons) {
+        const moreReqs = await prisma.poolRequest.findMany({
+            where: {
+                season: {
+                    id: season.id,
+                },
+                poolId: null,
+                user: {
+                    PotentialMatch: {
+                        none: { // there are no potential matches that have a derivedpool that i
+                            AND: [
+                                { seasonId: season.id },
+                                { declined: false },
+                                {
+                                    OR: [ // if one of these are true, the pool request does not need fulfilling.
+                                        { derivedPoolId: null },
+                                        { derivedPool: { disabled: false } },
+                                    ],
+                                },
+                            ]
+                        }
                     }
                 }
             }
-        }
-    });
-
+        });
+        unfulfilledRequests.push(...moreReqs);
+    }
     for (const req of unfulfilledRequests) {
         let strengthFloor = 0.5;
         const daysFromDepart = (req.departTime.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24);
         strengthFloor *= daysFromDepart / 7;
+        strengthFloor = Math.min(0.5, strengthFloor);
         await onRequestMatchAttempt(req.requestId, strengthFloor);
     }
 }
 
-async function onRequestMatchAttempt(requestId: number, curStrengthFloor: number = 0.5) {
+export async function onRequestMatchAttempt(requestId: number, curStrengthFloor: number = 0.5) {
     try {
         const req = await prisma.poolRequest.findFirstOrThrow({
             where: { requestId: requestId },
@@ -79,9 +87,8 @@ async function onRequestMatchAttempt(requestId: number, curStrengthFloor: number
                 seasonId: req.seasonId,
             }
         });
-
         const ntitle = `We have a potential pool for ${req.season.name}`;
-        const nbody = `Match strength: ${orderedMatches[0].strength * 100}%. Decide if you want to join.`;
+        const nbody = `Match strength: ${Math.round(orderedMatches[0].strength * 10000) / 100}%. Decide if you want to join. Tap on the notification bell to view.`;
         console.log("Matched " + req.userId + " with " + orderedMatches[0].userId);
         pushAndEmailPersistent(
             req.userId,

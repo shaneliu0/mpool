@@ -8,6 +8,8 @@ import {
 } from 'native-base';
 
 import * as Google from 'expo-auth-session/providers/google';
+import * as AppleAuthentication from 'expo-apple-authentication';
+import * as Crypto from 'expo-crypto';
 import * as WebBrowser from 'expo-web-browser';
 import firebase from 'firebase/compat/app';
 import 'firebase/compat/auth';
@@ -157,9 +159,9 @@ export default function SignInScreen(props: any) {
     const pagerRef = useRef<PagerView>(null);
     const [lockScroll, setLockScroll] = useState(false);
     const [showLogin, setShowLogin] = useState(false);
+    const [appleLoginAvailable, setAppleLoginAvailable] = useState(false);
 
     const [request, response, promptAsync] = Google.useAuthRequest({
-        responseType: "id_token",
         iosClientId: "YOUR_OAUTH_CLIENT_ID.apps.googleusercontent.com",
         androidClientId: "YOUR_OAUTH_CLIENT_ID.apps.googleusercontent.com", // invalid
         expoClientId: "YOUR_OAUTH_CLIENT_ID.apps.googleusercontent.com",
@@ -171,10 +173,10 @@ export default function SignInScreen(props: any) {
     useEffect(() => {
         (async () => {
             if (response?.type === 'success') {
-                const token = response.params.id_token;
+                const accessToken = response.authentication?.accessToken;
                 try {
                     // sign in with firebase
-                    const credential = GoogleAuthProvider.credential(token);
+                    const credential = GoogleAuthProvider.credential(null, accessToken);
                     await signInWithCredential(auth, credential);
                 } catch (error: any) {
                     // Handle Errors here.
@@ -274,6 +276,13 @@ export default function SignInScreen(props: any) {
         }
     });
 
+    useEffect(() => {
+        (async () => {
+            const appleAvailable = await AppleAuthentication.isAvailableAsync();
+            setAppleLoginAvailable(appleAvailable);
+        })();
+    }, [])
+
     const numPages = 4;
 
     if (showLogin) {
@@ -319,10 +328,50 @@ export default function SignInScreen(props: any) {
                             }}
                         />
                         <Text variant="h1" style={{ marginLeft: 0, fontWeight: "400" }}>Let's start</Text>
-                        <Text variant="bodylarge" style={{ marginLeft: 0 }}>Sign in with your university Google account.</Text>
+                        <Text variant="bodylarge" style={{ marginLeft: 0 }}>Sign in with your university provided Google or Apple account.</Text>
                     </View>
                     <Animated.View style={[animatedStartBottomButtonsStyle, { backgroundColor: "transparent" }]}>
                         <View style={{ marginBottom: 58, backgroundColor: "transparent", }}>
+                            <AppleAuthentication.AppleAuthenticationButton
+                                buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
+                                buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
+                                cornerRadius={15}
+                                style={{
+                                    width: '100%',
+                                    height: 50,
+                                    marginBottom: 10,
+                                }}
+                                onPress={async () => {
+                                    try {
+                                        const csrf = Math.random().toString(36).substring(2, 15);
+                                        const nonce = Math.random().toString(36).substring(2, 10);
+                                        const hashedNonce = await Crypto.digestStringAsync(
+                                            Crypto.CryptoDigestAlgorithm.SHA256, nonce);
+                                        const credential = await AppleAuthentication.signInAsync({
+                                            requestedScopes: [
+                                                AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+                                                AppleAuthentication.AppleAuthenticationScope.EMAIL,
+                                            ],
+                                            state: csrf,
+                                            nonce: hashedNonce,
+                                        });
+                                        if (credential.identityToken) {
+                                            const provider = new firebase.auth.OAuthProvider('apple.com');
+                                            const appleCredential = provider.credential({
+                                                idToken: credential.identityToken,
+                                                rawNonce: nonce,
+                                            });
+                                            await signInWithCredential(auth, appleCredential);
+                                        }
+                                    } catch (e: any) {
+                                        if (e.code === 'ERR_CANCELED') {
+                                            // handle that the user canceled the sign-in flow
+                                        } else {
+                                            console.error(e);
+                                        }
+                                    }
+                                }}
+                            />
                             <SignInWithGoogleButton onPress={onLoginPress} disabled={!request} />
                         </View>
                         <View style={{
@@ -354,8 +403,8 @@ export default function SignInScreen(props: any) {
             >
                 <Animated.View key="1" style={[animatedPagerStyle, styles.pagerPage]}>
                     <OnboardingPage
-                        title="Share a Uber"
-                        imgSrc={require('../assets/images/flightgroupsgraphic.png')}
+                        title="Share an Uber"
+                        imgSrc={require('../assets/images/flightgroupsgraphic.jpg')}
                         imgDim={350}
                         description="We group you with other students from your university with similar flight times and locations."
                     />
@@ -363,7 +412,7 @@ export default function SignInScreen(props: any) {
                 <View key="2" style={styles.pagerPage}>
                     <OnboardingPage
                         title="Meet someone new"
-                        imgSrc={require('../assets/images/interestsgraphic.png')}
+                        imgSrc={require('../assets/images/interestsgraphic.jpg')}
                         imgDim={300}
                         description="We try to match you with other students who have similar interests."
                     />
@@ -381,7 +430,7 @@ export default function SignInScreen(props: any) {
                         title="You're safe"
                         imgSrc={require('../assets/images/lockgraphic.png')}
                         imgDim={290}
-                        description="We only match you with other verified students from your university. You'll receive each other's emails after you match."
+                        description="We only match you with other verified students from your university. Your exact departure location is protected. You'll receive each other's info after you match."
                     />
                 </Animated.View>
             </PagerView>
