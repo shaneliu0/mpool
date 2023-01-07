@@ -1,5 +1,5 @@
 import React, { useContext, useEffect, useRef, useState } from "react";
-import { Platform, StyleSheet, Button, useColorScheme, Modal, ScrollView, } from "react-native";
+import { Platform, StyleSheet, Button, useColorScheme, Modal, ScrollView, TextInput, } from "react-native";
 import DateTimePicker from '@react-native-community/datetimepicker';
 import moment from 'moment';
 
@@ -23,6 +23,7 @@ import { MaterialIcons } from "@expo/vector-icons";
 import * as Logging from '../Logging';
 import { defaultPoolPlace, PoolPlace, PoolPlaceCategory } from "../dataAccess/poolData";
 import { Toast } from "react-native-toast-message/lib/src/Toast";
+import { TouchableOpacity } from "react-native-gesture-handler";
 
 interface PlacesSelectorProps {
     onSelect: (place: GooglePlaceData, details: GooglePlaceDetail | null) => void;
@@ -138,16 +139,29 @@ export function FlexiblePlacesSelector(props: FlexiblePlacesSelectorProps) {
 
     return (
         <>
-            <View style={styles.flexiblePickerView}>
-                <Input
-                    placeholder={placeholder}
-                    onPressOut={() => setModalVisible(true)}
-                    value={name}
-                    isReadOnly
-                    isDisabled={modalVisible}
-                    style={{ width: "100%" }}
-                />
-            </View>
+            {Platform.OS === 'ios' ? (
+                <View style={styles.flexiblePickerView}>
+                    <Input
+                        placeholder={placeholder}
+                        onPressOut={() => setModalVisible(true)}
+                        value={name}
+                        isReadOnly
+                        isDisabled={modalVisible}
+                        style={{ width: "100%" }}
+                    />
+                </View>
+            ) : (
+                <View style={styles.flexiblePickerView}>
+                    <Input
+                        placeholder={placeholder}
+                        onPressIn={() => setModalVisible(true)}
+                        value={name}
+
+                        isDisabled={modalVisible}
+                        style={{ width: "100%" }}
+                    />
+                </View>
+            )}
             <Modal
                 animationType="slide"
                 visible={modalVisible}
@@ -450,7 +464,8 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.25,
         shadowRadius: 4,
         elevation: 5,
-        width: "90%"
+        width: "90%",
+        height: "90%",
     },
     alignRight: {
         marginRight: "auto"
@@ -458,7 +473,6 @@ const styles = StyleSheet.create({
     placeSelector: {
         borderRadius: 20,
         padding: 10,
-        elevation: 2,
         width: "90%",
         height: "90%",
     },

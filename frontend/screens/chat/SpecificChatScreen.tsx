@@ -1,13 +1,12 @@
 import * as React from 'react';
 import { useState, useEffect } from 'react';
 
-import { StyleSheet, ActivityIndicator, TouchableOpacity } from 'react-native';
-
+import { StyleSheet, ActivityIndicator, TouchableOpacity, Clipboard, Alert } from 'react-native';
 import {
   Heading
 } from 'native-base';
 
-
+import prompt from '../../components/PromptProvider';
 import { getDatabase, ref, onValue } from "firebase/database";
 
 import { View } from '../../components/Themed';
@@ -28,6 +27,7 @@ import { PoolView } from '../pools/PoolScreen';
 import { markPoolAsRead } from '../../dataAccess/chats';
 import { getPoolStatus } from '../../dataAccess/poolData';
 import { MatchedPoolView } from '../pools/MatchedPoolScreen';
+import { postReport } from '../../dataAccess/safety';
 
 const db = getDatabase();
 
@@ -174,6 +174,55 @@ export default function Chats({ route, navigation }: RootTabScreenProps<'Chat'>)
     setLoadingEarlier(false);
   }
 
+  const handleReportMessage = async (message: IMessage) => {
+    try {
+      prompt(
+        'Report message',
+        'Enter a reason for reporting this message.',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Report', onPress: reason => postReport({ reason, messageId: typeof message._id === 'string' ? parseInt(message._id) : message._id }).then(() => {
+              Toast.show({
+                type: 'success',
+                text1: 'Message reported!'
+              })
+            }).catch(e => {
+              Logging.Error(e, { text1: "Error: couldn't report message." });
+            })
+          },
+        ],
+        {
+          type: 'plain-text'
+        }
+      );
+    } catch (error) {
+      Logging.Error(error);
+    }
+  }
+
+  const handleMsgLongPress = (context: any, message: IMessage) => {
+    const options = [
+      'Copy Text',
+      'Report Message',
+      'Cancel',
+    ];
+    const cancelButtonIndex = options.length - 1;
+    context.actionSheet().showActionSheetWithOptions({
+      options,
+      cancelButtonIndex,
+    },
+      (buttonIndex: number) => {
+        switch (buttonIndex) {
+          case 0:
+            Clipboard.setString(message.text);
+            break;
+          case 1:
+            handleReportMessage(message);
+        }
+      });
+  }
+
   if (!route.params) return <Heading>Couldn't find the requested chat.</Heading>
   const { chatId } = route.params;
 
@@ -193,6 +242,7 @@ export default function Chats({ route, navigation }: RootTabScreenProps<'Chat'>)
           isLoadingEarlier={loadingEarlier}
           infiniteScroll={true}
           renderUsernameOnMessage={true}
+          onLongPress={handleMsgLongPress}
         />
       </View>
     </>

@@ -1,6 +1,6 @@
 import { Avatar, Input } from 'native-base';
 import React, { useState, useEffect, useContext } from 'react';
-import { Alert, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
+import { Alert, Platform, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
 import { FadeInView } from '../../components/Animation';
 import StyledButton from '../../components/Button';
 import { Loading } from '../../components/Display';
@@ -19,7 +19,9 @@ import { useRef } from 'react';
 import { Chip, ChipContainer } from '../../components/Chip';
 import { AntDesign, Ionicons, MaterialIcons } from '@expo/vector-icons';
 import * as Logging from '../../Logging';
-import { Toast } from 'react-native-toast-message/lib/src/Toast';
+import prompt from '../../components/PromptProvider';
+
+const blurViewTint = Platform.OS === 'ios' ? 'default' : 'light';
 
 function capitalizeFirstLetter(str: string) {
   if (!str) return;
@@ -115,15 +117,15 @@ function EditableKey(props: EditableKeyProps) {
         </TouchableOpacity>
       </View>
       {realOpen && (
-        <BlurView intensity={open ? 95 : 0} style={[StyleSheet.absoluteFill, styles.contentEditBlur]}>
+        <BlurView tint={blurViewTint} intensity={open ? 95 : 0} style={[StyleSheet.absoluteFill, styles.contentEditBlur]}>
           <View style={styles.transparent}>
-            <Animated.View style={animatedHeaderViewStyle}>
+            <Animated.View style={animatedHeaderViewStyle} key="1">
               <Text variant="h1">{dname}</Text>
             </Animated.View>
-            <Animated.View style={[animatedTextFieldViewStyle, styles.transparent, { padding: 15 }]}>
+            <Animated.View style={[animatedTextFieldViewStyle, styles.transparent, { padding: 15 }]} key="2">
               <Input multiline autoFocus value={value} onChangeText={handleChange} variant="underlined" placeholder={`New ${dname}`} />
             </Animated.View>
-            <Animated.View style={[animatedButtonsViewStyle, styles.editCancel]}>
+            <Animated.View style={[animatedButtonsViewStyle, styles.editCancel]} key="3">
               <Button style={styles.editCancelItem} color='secondary' variant='outlined' onPress={initiateClose}>Cancel</Button>
               <Button style={styles.editCancelItem} color='secondary' onPress={createEdit}>Edit</Button>
             </Animated.View>
@@ -213,25 +215,41 @@ function EditableContent(props: EditableContentProps) {
       }
     );
   }
+
   const handleTileAdd = () => {
-    Alert.prompt(
+    prompt(
       "Add an item",
       undefined,
-      (t: string) => {
-        const addTile = () => {
-          setValue({
-            ...value,
-            tiles: [...(tiles || []), t]
-          })
-        };
-
-        tilesOpacity.value = withTiming(0, {}, () => {
-          runOnJS(addTile)();
-          tilesOpacity.value = withTiming(1);
-        });
+      [
+        {
+          text: "Cancel",
+          style: "cancel"
+        },
+        {
+          text: "Add",
+          onPress: (t: string) => {
+            const addTile = () => {
+              setValue({
+                ...value,
+                tiles: [...(value.tiles || []), t]
+              })
+            };
+            
+            tilesOpacity.value = withTiming(0, {}, () => {
+              runOnJS(addTile)();
+              tilesOpacity.value = withTiming(1);
+            }
+            );
+          }
+        }
+      ],
+      {
+        type: "plain-text",
       }
     )
+    
   }
+
   const handleBlockDelete = () => {
     Alert.alert(
       'Remove block',
@@ -346,7 +364,7 @@ function EditableContent(props: EditableContentProps) {
         </TouchableOpacity>
       </View>
       {realOpen && (
-        <BlurView intensity={open ? 95 : 0} style={[StyleSheet.absoluteFill, styles.contentEditBlur]}>
+        <BlurView tint={blurViewTint} intensity={open ? 95 : 0} style={[StyleSheet.absoluteFill, styles.contentEditBlur]}>
           <View style={styles.transparent}>
             <Animated.View style={animatedHeaderViewStyle}>
               <Text variant="h1">{heading}</Text>
@@ -618,7 +636,7 @@ function AddContent(props: AddContentProps) {
         </TouchableOpacity>
       </View>
       {realOpen && (
-        <BlurView intensity={open ? 95 : 0} style={[StyleSheet.absoluteFill, styles.contentEditBlur]}>
+        <BlurView tint={blurViewTint} intensity={open ? 95 : 0} style={[StyleSheet.absoluteFill, styles.contentEditBlur]}>
           <View style={styles.transparent}>
             {promptsOpen ? (
               <>
@@ -966,7 +984,7 @@ export default function AccountScreen() {
   })
 
   useEffect(() => {
-    if (loading) {
+    if (loading) {    
       (async () => {
         try {
           const resp = await getOwnProfile();
@@ -1051,7 +1069,7 @@ const styles = StyleSheet.create({
     margin: 5,
   },
   transparent: {
-    backgroundColor: "transparent"
+    backgroundColor: "transparent",
   },
   addContentButtonStyle: {
     flex: 1,

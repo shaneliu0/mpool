@@ -50,3 +50,7 @@ export async function getCheckedInStatus() {
     const resp = await axios.get('/user/checkedin');
     return (resp.data as CheckedInResp);
 }
+
+export async function deleteAccount() {
+    await axios.delete('/user');
+}

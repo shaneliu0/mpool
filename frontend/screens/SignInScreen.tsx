@@ -328,7 +328,11 @@ export default function SignInScreen(props: any) {
                             }}
                         />
                         <Text variant="h1" style={{ marginLeft: 0, fontWeight: "400" }}>Let's start</Text>
-                        <Text variant="bodylarge" style={{ marginLeft: 0 }}>Sign in with your university provided Google or Apple account.</Text>
+                        {Platform.OS === 'ios' ? (
+                            <Text variant="bodylarge" style={{ marginLeft: 0 }}>Sign in with your university provided Google or Apple account.</Text>
+                        ) : (
+                            <Text variant="bodylarge" style={{ marginLeft: 0 }}>Sign in with your university provided Google account.</Text>
+                        )}
                     </View>
                     <Animated.View style={[animatedStartBottomButtonsStyle, { backgroundColor: "transparent" }]}>
                         <View style={{ marginBottom: 58, backgroundColor: "transparent", }}>

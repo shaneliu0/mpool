@@ -115,7 +115,7 @@ export default function PoolRequestCreationScreen({ route, navigation }: RootTab
     return (
         <FadeInView>
             <ScrollView style={[{ marginBottom: "auto", height: "100%", }, styles.fullWidth]} keyboardShouldPersistTaps="handled">
-                <View style={{ paddingBottom: 150 }}>
+                <View style={{ marginBottom: 150, }}>
                     <Text variant="h1">{displayTitle}</Text>
                     <Text variant="h2">You're creating a new pool request.</Text>
                     <ExpandableBox
@@ -166,6 +166,13 @@ export default function PoolRequestCreationScreen({ route, navigation }: RootTab
                                 placeholder="Select your departure location"
                                 value={from}
                             />
+                            <Text variant="bodylarge">Destination</Text>
+                            <FlexiblePlacesSelector
+                                onSelect={setTo}
+                                items={destinations}
+                                placeholder="Select your destination"
+                                value={to}
+                            />
                             <Text variant="bodylarge">Select your pickup location.</Text>
                             <BulletList
                                 items={[
@@ -173,19 +180,6 @@ export default function PoolRequestCreationScreen({ route, navigation }: RootTab
                                     "This isn't your final pickup location, which might change as you're matched.",
                                 ]}
                                 variant="bodylarge"
-                            />
-                            <Text variant="bodylarge">Destination</Text>
-                            {/* <SingleSelect
-                                selectedValue={dest}
-                                items={destinations}
-                                label="Select Option"
-                                onValueChange={onDestChange}
-                            /> */}
-                            <FlexiblePlacesSelector
-                                onSelect={setTo}
-                                items={destinations}
-                                placeholder="Select your destination"
-                                value={to}
                             />
                         </View>
                     </ExpandableBox>

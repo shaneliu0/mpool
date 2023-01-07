@@ -41,6 +41,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import CustomHomeHeader from './headers/CustomHomeHeader';
 import CustomAccountHeader from './headers/CustomAccountHeader';
 import AccountSettings from '../screens/account/AccountSettingsScreen';
+import BlocksScreen from '../screens/account/BlocksScreen';
 
 export default function Navigation({ colorScheme }: { colorScheme: ColorSchemeName }) {
   const user = useSelector((state: any) => state.auth.user);
@@ -131,10 +132,11 @@ const AccountStack = createNativeStackNavigator<AccountParamList>();
 function AccountNavigator() {
   return (
     <AccountStack.Navigator
-      initialRouteName='Account'
+      initialRouteName='AccountHome'
     >
-      <AccountStack.Screen name="Account" component={AccountScreen} options={{ headerRight: () => <CustomAccountHeader />, }} />
+      <AccountStack.Screen name="AccountHome" component={AccountScreen} options={{ title: "Account", headerRight: () => <CustomAccountHeader />, }} />
       <AccountStack.Screen name="AccountSettings" component={AccountSettings} options={{ title: "Settings" }} />
+      <AccountStack.Screen name="Blocks" component={BlocksScreen} options={{ title: "Blocks" }} />
     </AccountStack.Navigator>
   )
 }

@@ -22,6 +22,7 @@ router.get('/updatevalidate', async (req, res) => {
             uid
         } = user;
         const picture = `https://avatars.dicebear.com/api/bottts/${uid}.png`;
+        // const picture = `https://source.boringavatars.com/marble/256/${uid}`; // this is an svg
         const potentialProfileId = await prisma.profile.findFirst({
             where: {
                 User: { some: { userId: user.uid }}
@@ -198,6 +199,17 @@ router.get('/checkedin', async (req, res) => {
                 checkedIn: true
             } as CheckedInResp);
         }
+    } catch (error) {
+        resError(res, error);
+    }
+});
+
+router.delete('/', async (req, res) => {
+    const { user } = req;
+
+    try {
+        // should reset the userid on firebase.
+        return res.sendStatus(200);
     } catch (error) {
         resError(res, error);
     }

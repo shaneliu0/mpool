@@ -206,3 +206,7 @@ export const getPoolStatus = async (poolId: number): Promise<GetPoolStatusResp> 
 
     return (resp.data as GetPoolStatusResp);
 }
+
+export const cancelPoolRequest = async (requestId: number): Promise<void> => {
+    await axios.delete(`/pool/request/${requestId}`);
+}

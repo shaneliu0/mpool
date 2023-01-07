@@ -221,14 +221,6 @@ function PoolRequest(props: PoolRequestProps) {
                                 placeholder="Select your departure location"
                                 value={newFrom}
                             />
-                            <Text variant="bodylarge">Select your pickup location.</Text>
-                            <BulletList
-                                items={[
-                                    "Set the location you would like to be picked up from.",
-                                    "This isn't your final pickup location, which might change as you're matched.",
-                                ]}
-                                variant="bodylarge"
-                            />
                             <Text variant="bodylarge">Destination</Text>
                             <FlexiblePlacesSelector
                                 onSelect={(p) => {
@@ -238,6 +230,14 @@ function PoolRequest(props: PoolRequestProps) {
                                 items={request.destinations}
                                 placeholder="Select your destination"
                                 value={newTo}
+                            />
+                            <Text variant="bodylarge">Select your pickup location.</Text>
+                            <BulletList
+                                items={[
+                                    "Set the location you would like to be picked up from.",
+                                    "This isn't your final pickup location, which might change as you're matched.",
+                                ]}
+                                variant="bodylarge"
                             />
                         </View>
                     </ExpandableBox>

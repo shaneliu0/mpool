@@ -1,5 +1,4 @@
-// const allowAll = Boolean(process.env.ALLOW_ALL);
-const allowAll = true;
+const allowAll = Boolean(process.env.ALLOW_ALL);
 const allowedEmailEndings = [ "umich.edu" ];
 export const checkUserAllowed = async (userId: string) => {
     if (allowAll) return true;

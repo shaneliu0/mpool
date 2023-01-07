@@ -24,6 +24,10 @@ model User {
   NotificationTokens NotificationTokens[]
   UnreadMessage      UnreadMessage[]
   CheckedIn          CheckedIn[]
+  sentReports        Reports[]            @relation("reportedby")
+  receivedReports    Reports[]            @relation("reporteduser")
+  blockedUsers       BlockedUser[]        @relation("blockedby")
+  receivedBlocks     BlockedUser[]        @relation("blockeduser")
 }
 
 model CheckedIn {
@@ -113,13 +117,35 @@ model PotentialMatch {
 }
 
 model Message {
-  messageId Int      @id @default(autoincrement())
-  sender    User     @relation(fields: [senderId], references: [userId])
+  messageId Int       @id @default(autoincrement())
+  sender    User      @relation(fields: [senderId], references: [userId])
   senderId  String
-  createdAt DateTime @default(now())
-  pool      Pool     @relation(fields: [poolId], references: [poolId])
+  createdAt DateTime  @default(now())
+  pool      Pool      @relation(fields: [poolId], references: [poolId])
   poolId    Int
-  content   String   @db.VarChar(1500)
+  content   String    @db.VarChar(1500)
+  Reports   Reports[]
+}
+
+model Reports {
+  reportId    Int      @id @default(autoincrement())
+  createdAt   DateTime @default(now())
+  createdBy   User     @relation(name: "reportedby", fields: [createdById], references: [userId])
+  createdById String
+  reason      String
+  message     Message? @relation(fields: [messageId], references: [messageId])
+  messageId   Int?
+  user        User?    @relation(name: "reporteduser", fields: [userId], references: [userId])
+  userId      String?
+}
+
+model BlockedUser {
+  blockId Int      @id @default(autoincrement())
+  createdAt     DateTime @default(now())
+  blockedBy     User     @relation(name: "blockedby", fields: [blockedById], references: [userId])
+  blockedById   String
+  user          User     @relation(name: "blockeduser", fields: [userId], references: [userId])
+  userId        String
 }
 
 model UnreadMessage {

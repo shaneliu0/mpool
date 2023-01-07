@@ -41,11 +41,37 @@ router.get('/', async (req: any, res) => {
     try {
         const availablePools = await prisma.pool.findMany({
             where: {
-                PoolRequest: {
-                    some: {
-                        userId: user.uid
+                OR: [
+                    {
+                        PoolRequest: {
+                            some: {
+                                userId: user.uid
+                            }
+                        }
+                    },
+                    {
+                        PotentialMatch: {
+                            some: {
+                                users: {
+                                    some: {
+                                        userId: user.uid
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    {
+                        DerivedFromMatch: {
+                            some: {
+                                users: {
+                                    some: {
+                                        userId: user.uid
+                                    }
+                                }
+                            }
+                        }
                     }
-                },
+                ],
                 disabled: false,
             },
             include: {
@@ -84,7 +110,7 @@ router.get('/', async (req: any, res) => {
                 includedUids.add(pr.userId);
                 photoRes.push(pr.user.photoUrl);
             }
-        
+
             for (const match of pool.DerivedFromMatch) {
                 for (const user of match.users) {
                     if (includedUids.has(user.userId)) continue;
@@ -92,7 +118,7 @@ router.get('/', async (req: any, res) => {
                     photoRes.push(user.photoUrl);
                 }
             }
-        
+
             for (const match of pool.PotentialMatch) {
                 for (const user of match.users) {
                     if (includedUids.has(user.userId)) continue;
@@ -251,7 +277,6 @@ export async function sendRealtimeMessage(poolId: number, fromId: string, conten
     const poolMembers = await getAllPoolMembers(poolId);
 
     const allUids: string[] = poolMembers.map(m => m.userId);
-
 
     await Promise.all(allUids.map(async (userId) => {
         if (userId === fromId) return;

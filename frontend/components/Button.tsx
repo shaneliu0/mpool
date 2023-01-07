@@ -1,14 +1,12 @@
 import React, { useContext } from 'react';
 import {
-    StyleSheet,
     TouchableOpacity,
     Text,
     StyleProp
 } from 'react-native';
 import { ThemeContext } from '../Context';
-import { ActivityIndicator, View } from 'react-native';
+import { ActivityIndicator } from 'react-native';
 import GLogo from '../assets/svgs/glogo.svg';
-import Colors from '../constants/Colors';
 
 type ColorTypes = "primary" | "secondary" | "danger";
 

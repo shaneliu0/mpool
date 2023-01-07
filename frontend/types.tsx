@@ -58,8 +58,9 @@ export type ChatParamList = {
 }
 
 export type AccountParamList = {
-  Account: undefined;
+  AccountHome: undefined;
   AccountSettings: undefined;
+  Blocks: undefined;
 }
 
 // begin non-navigation types

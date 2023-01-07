@@ -27,6 +27,8 @@ import Colors from './constants/Colors';
 import { API_BASE_URL } from './config';
 import { registerNotifications } from './dataAccess/notifications';
 import { ThemeContext } from './Context';
+import { ActionSheetProvider } from '@expo/react-native-action-sheet';
+import { AndroidPromptProvider } from './components/PromptProvider';
 
 // configurate axios
 axios.defaults.baseURL = API_BASE_URL;
@@ -77,7 +79,7 @@ function App() {
           }
         }
       },
-    }
+    },
   });
 
   useEffect(() => {
@@ -87,11 +89,11 @@ function App() {
       notificationListener.current = Notifications.addNotificationReceivedListener(notification => {
         setNotification(notification);
       });
-  
+
       responseListener.current = Notifications.addNotificationResponseReceivedListener(response => {
         console.log(response);
       });
-  
+
       return () => {
         Notifications.removeNotificationSubscription(notificationListener.current);
         Notifications.removeNotificationSubscription(responseListener.current);
@@ -104,13 +106,16 @@ function App() {
   } else {
     return (
       <ThemeContext.Provider value={darkMode ? Colors.dark : Colors.light}>
-        <NativeBaseProvider theme={theme}>
-          <SafeAreaProvider>
-            <Navigation colorScheme={colorScheme} />
-            <StatusBar />
-            <Toast />
-          </SafeAreaProvider>
-        </NativeBaseProvider>
+        <ActionSheetProvider>
+          <NativeBaseProvider theme={theme}>
+            <AndroidPromptProvider />
+            <SafeAreaProvider>
+              <Navigation colorScheme={colorScheme} />
+              <StatusBar />
+              <Toast />
+            </SafeAreaProvider>
+          </NativeBaseProvider>
+        </ActionSheetProvider>
       </ThemeContext.Provider>
     );
   }

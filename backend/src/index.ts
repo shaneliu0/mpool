@@ -23,6 +23,7 @@ import chatRouter from './routes/chat';
 import userRouter from './routes/user';
 import notificationsRouter from './routes/notifications';
 import staticRouter from './routes/static';
+import safetyRouter from './routes/safety';
 
 import './matching';
 
@@ -58,6 +59,12 @@ app.use('/chat', chatRouter);
 app.use('/user', userRouter);
 app.use('/notifications', notificationsRouter);
 app.use('/static', staticRouter);
+app.use('/safety', safetyRouter);
 
 const port = process.env.PORT || 3001;
-app.listen(port, () => console.log('Server started on port ' + port));
+app.listen(port, () => {
+    console.log('Server started on port ' + port);
+    if (Boolean(process.env.ALLOW_ALL)) {
+        console.log("Allowing requests from all email endings.")
+    }
+});

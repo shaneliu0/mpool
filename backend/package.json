@@ -7,8 +7,8 @@
     "node": "16.13.0"
   },
   "scripts": {
-    "start": "cd src && ts-node -T index.ts PORT=80",
-    "dev": "cd src && nodemon index.ts",
+    "start": "cd src && ts-node -T index.ts",
+    "dev": "cd src && ALLOW_ALL=TRUE nodemon index.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",
