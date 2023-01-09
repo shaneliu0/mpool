@@ -42,12 +42,20 @@ export function AndroidPromptProvider() {
         const f = () => {
             setTitle(title);
             setMessage(message);
-            setButtons(buttons);
+            if (buttons) {
+                setButtons(buttons);
+            } else {
+                setButtons([
+                    {
+                        style: "cancel",
+                        text: "OK",
+                    }
+                ]);
+            }
             setOptions(options);
             setInput("");
             setVisible(true);
         };
-
         if (Date.now() - promptLastCancelled < 500) {
             setTimeout(f, 500);
         } else {
@@ -56,14 +64,13 @@ export function AndroidPromptProvider() {
     }
 
     const handleCancel = () => {
-        setVisible(false);
+        hide();
     }
 
-    useEffect(() => {
-        if (!visible) {
-            promptLastCancelled = Date.now();
-        }
-    }, [visible]);
+    const hide = () => {
+        promptLastCancelled = Date.now();
+        setVisible(false);
+    }
 
     if (Platform.OS !== "android") {
         return null;
@@ -84,10 +91,10 @@ export function AndroidPromptProvider() {
                         return <Dialog.Button key={index} label={button.text} onPress={handleCancel} />
                     }
                     return <Dialog.Button key={index} label={button.text} onPress={() => {
+                        hide();
                         if (button.onPress) {
                             button.onPress(input);
                         }
-                        setVisible(false);
                     }} />
                 })
                 }

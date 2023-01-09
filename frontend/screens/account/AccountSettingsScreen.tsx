@@ -35,13 +35,40 @@ function AccountSettings({ navigation }: RootTabScreenProps<'Account'>) {
     }
 
     const handeDeleteAccount = async () => {
+        const confirmationText = "mpool";
         try {
             prompt(
                 "We're sorry to see you go.",
-                `Enter "mpool" below to delete your account.`
+                `Enter "${confirmationText}" below to delete your account.`,
+                [
+                    {
+                        style: 'cancel',
+                        text: 'Cancel',
+                    },
+                    {
+                        style: 'destructive',
+                        text: 'Delete',
+                        onPress: async (text: string) => {
+                            if (text.toLowerCase() !== confirmationText) {
+                                prompt(
+                                    "Cancelled",
+                                    `You did not enter the correct text, "${confirmationText}" into the field.`,
+                                );
+                                return;
+                            };
+                            await deleteAccount();
+                            prompt(
+                                "Account Deleted",
+                                "Your account has been deleted and you have been signed out.",
+                            );
+                            auth.signOut();
+                        }
+                    }
+                ],
+                {
+                    type: 'plain-text',
+                }
             )
-            await deleteAccount();
-            auth.signOut();
         } catch (error) {
             Logging.Error(error);
         }
