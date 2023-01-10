@@ -1,8 +1,8 @@
 import { MaterialIcons } from "@expo/vector-icons";
 import { HStack, IconButton, Heading } from "native-base";
-import React, { useContext } from "react";
+import React, { useContext, useEffect } from "react";
 
-import { Modal, StyleSheet, View } from 'react-native';
+import { BackHandler, Modal, StyleSheet, View } from 'react-native';
 import { ThemeContext } from "../Context";
 import { TextButton } from "./Button";
 import { Loading } from "./Display";
@@ -37,6 +37,7 @@ export function PageSheetModal(props: PageSheetModalProps) {
             presentationStyle="pageSheet"
             animationType="slide"
             visible={open}
+            onRequestClose={handleClose}
         >
             <View style={{
                 display: "flex",

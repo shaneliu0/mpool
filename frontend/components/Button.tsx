@@ -2,11 +2,14 @@ import React, { useContext } from 'react';
 import {
     TouchableOpacity,
     Text,
-    StyleProp
+    StyleProp,
+    Platform
 } from 'react-native';
 import { ThemeContext } from '../Context';
 import { ActivityIndicator } from 'react-native';
 import GLogo from '../assets/svgs/glogo.svg';
+
+const isAndroid = Platform.OS === 'android';
 
 type ColorTypes = "primary" | "secondary" | "danger";
 
@@ -137,7 +140,7 @@ export function TextButton(props: TextButtonProps) {
 
     return (
         <>
-            <TouchableOpacity onPress={onPress} style={{ margin: 10, marginTop: 20, }}>
+            <TouchableOpacity onPress={onPress} style={{ margin: 10, marginTop: isAndroid ? 15 : 20, }}>
                 <Text style={{
                     fontSize: 20,
                     color: color === 'secondary' ? "black" : "#007AFF",

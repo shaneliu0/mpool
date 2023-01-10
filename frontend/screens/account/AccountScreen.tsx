@@ -21,7 +21,9 @@ import { AntDesign, Ionicons, MaterialIcons } from '@expo/vector-icons';
 import * as Logging from '../../Logging';
 import prompt from '../../components/PromptProvider';
 
-const blurViewTint = Platform.OS === 'ios' ? 'default' : 'light';
+const isAndroid = Platform.OS === 'android';
+const blurViewTint = isAndroid ? 'light' : 'default';
+const buttonsFlexDirection = isAndroid ? 'column' : 'row';
 
 function capitalizeFirstLetter(str: string) {
   if (!str) return;
@@ -228,13 +230,14 @@ function EditableContent(props: EditableContentProps) {
         {
           text: "Add",
           onPress: (t: string) => {
+            if (!t) return;
             const addTile = () => {
               setValue({
                 ...value,
                 tiles: [...(value.tiles || []), t]
               })
             };
-            
+
             tilesOpacity.value = withTiming(0, {}, () => {
               runOnJS(addTile)();
               tilesOpacity.value = withTiming(1);
@@ -247,7 +250,7 @@ function EditableContent(props: EditableContentProps) {
         type: "plain-text",
       }
     )
-    
+
   }
 
   const handleBlockDelete = () => {
@@ -467,21 +470,34 @@ function AddContent(props: AddContentProps) {
     );
   };
   const handleTileAdd = () => {
-    Alert.prompt(
+    prompt(
       "Add an item",
       undefined,
-      (t: string) => {
-        const addTile = () => {
-          setValue({
-            ...value,
-            tiles: [...(tiles || []), t]
-          })
-        };
+      [
+        {
+          text: "Cancel",
+          style: "cancel"
+        },
+        {
+          text: "Add",
+          onPress: (t: string) => {
+            if (!t) return;
+            const addTile = () => {
+              setValue({
+                ...value,
+                tiles: [...(tiles || []), t]
+              })
+            };
 
-        tilesOpacity.value = withTiming(0, {}, () => {
-          runOnJS(addTile)();
-          tilesOpacity.value = withTiming(1);
-        });
+            tilesOpacity.value = withTiming(0, {}, () => {
+              runOnJS(addTile)();
+              tilesOpacity.value = withTiming(1);
+            });
+          }
+        }
+      ],
+      {
+        type: "plain-text",
       }
     )
   }
@@ -641,18 +657,27 @@ function AddContent(props: AddContentProps) {
             {promptsOpen ? (
               <>
                 <Animated.View style={animatedPromptsViewStyle} key={0}>
-                  <View style={{
-                    width: "100%",
-                    backgroundColor: "transparent",
-                    justifyContent: "center",
-                    alignItems: "center",
-                    marginTop: -70,
-                    marginBottom: 30,
-                  }}>
-                    <TouchableOpacity onPress={handlePromptsClose}>
+                  {isAndroid ? (
+                    <TouchableOpacity onPress={handlePromptsClose} style={{
+                      width: "100%",
+                      alignItems: "center"
+                    }}>
                       <AntDesign name="closecircleo" size={50} color="black" />
                     </TouchableOpacity>
-                  </View>
+                  ) : (
+                    <View style={{
+                      width: "100%",
+                      backgroundColor: "transparent",
+                      justifyContent: "center",
+                      alignItems: "center",
+                      marginTop: -70,
+                      marginBottom: 30,
+                    }}>
+                      <TouchableOpacity onPress={handlePromptsClose}>
+                        <AntDesign name="closecircleo" size={50} color="black" />
+                      </TouchableOpacity>
+                    </View>
+                  )}
                   <Text variant="h1">Select an option</Text>
                   {renderPrompts()}
                 </Animated.View>
@@ -904,27 +929,40 @@ function EditProfile(props: EditProfileProps) {
                 />
               </View>
             </View>
-            <View style={{
-              flex: 1,
-              flexDirection: "row",
-              alignItems: "center",
-              justifyContent: "space-between",
-            }}>
-              {changed && (
-                <TouchableOpacity
-                  style={{
-                    margin: 15,
-                    marginLeft: 35,
-                    marginTop: -50,
-                    width: 35,
-                  }}
-                  onPress={handleReset}
-                >
-                  <MaterialIcons name="undo" size={24} color="black" />
-                </TouchableOpacity>
-              )}
-              <View></View>
-            </View>
+            {(isAndroid && changed) && <TouchableOpacity
+              style={{
+                margin: 15,
+                marginLeft: 35,
+                marginTop: -50,
+                width: 35,
+              }}
+              onPress={handleReset}
+            >
+              <MaterialIcons name="undo" size={24} color="black" />
+            </TouchableOpacity>}
+            {!isAndroid && (
+              <View style={{
+                flex: 1,
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "space-between",
+              }}>
+                {changed && (
+                  <TouchableOpacity
+                    style={{
+                      margin: 15,
+                      marginLeft: 35,
+                      marginTop: -50,
+                      width: 35,
+                    }}
+                    onPress={handleReset}
+                  >
+                    <MaterialIcons name="undo" size={24} color="black" />
+                  </TouchableOpacity>
+                )}
+                <View></View>
+              </View>
+            )}
             <EditableKey
               profileKey="description"
               content={profile.description}
@@ -984,7 +1022,7 @@ export default function AccountScreen() {
   })
 
   useEffect(() => {
-    if (loading) {    
+    if (loading) {
       (async () => {
         try {
           const resp = await getOwnProfile();
@@ -1059,8 +1097,8 @@ const styles = StyleSheet.create({
     zIndex: 99,
   },
   editCancel: {
-    flex: 1,
-    flexDirection: "row",
+    display: "flex",
+    flexDirection: buttonsFlexDirection,
     width: 150,
     marginHorizontal: 15,
     backgroundColor: "transparent",

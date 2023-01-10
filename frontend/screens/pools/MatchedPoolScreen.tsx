@@ -35,6 +35,7 @@ function PotentialPool(props: PotentialPoolProps) {
     };
 
     const handleConfirm = async () => {
+        if (confirming) return;
         if (!canSubmit) return alert("Please check the times and location!");
         setConfirming(true);
         try {
