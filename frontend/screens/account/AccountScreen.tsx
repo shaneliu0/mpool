@@ -12,7 +12,7 @@ import { defaultContentBlock, defaultProfile, getOwnProfile, getProfileContentPr
 import { ProfileDisplay } from '../pools/ProfileViewScreen';
 import Text from '../../components/StyledText';
 import { ThemeContext } from '../../Context';
-import Animated, { runOnJS, useAnimatedProps, useAnimatedStyle, useSharedValue, withSpring, withTiming, } from 'react-native-reanimated';
+import Animated, { runOnJS, useAnimatedProps, useAnimatedStyle, useSharedValue, withSpring, WithSpringConfig, withTiming, } from 'react-native-reanimated';
 import { BlurView } from 'expo-blur';
 import Button from '../../components/Button';
 import { useRef } from 'react';
@@ -23,7 +23,6 @@ import prompt from '../../components/PromptProvider';
 
 const isAndroid = Platform.OS === 'android';
 const blurViewTint = isAndroid ? 'light' : 'default';
-const buttonsFlexDirection = isAndroid ? 'column' : 'row';
 
 function capitalizeFirstLetter(str: string) {
   if (!str) return;
@@ -62,7 +61,7 @@ function EditableKey(props: EditableKeyProps) {
   const translateOffsets = useSharedValue(200);
   const opacities = useSharedValue(0);
 
-  const SPRING_OPTIONS: Animated.WithSpringConfig = {
+  const SPRING_OPTIONS: WithSpringConfig = {
     damping: 20,
     stiffness: 90,
   };
@@ -282,7 +281,7 @@ function EditableContent(props: EditableContentProps) {
   const opacities = useSharedValue(0);
   const tilesOpacity = useSharedValue(1);
 
-  const SPRING_OPTIONS: Animated.WithSpringConfig = {
+  const SPRING_OPTIONS: WithSpringConfig = {
     damping: 20,
     stiffness: 90,
   };
@@ -547,7 +546,7 @@ function AddContent(props: AddContentProps) {
   const tilesOpacity = useSharedValue(1);
 
 
-  const SPRING_OPTIONS: Animated.WithSpringConfig = {
+  const SPRING_OPTIONS: WithSpringConfig = {
     damping: 20,
     stiffness: 90,
   };
@@ -929,40 +928,27 @@ function EditProfile(props: EditProfileProps) {
                 />
               </View>
             </View>
-            {(isAndroid && changed) && <TouchableOpacity
-              style={{
-                margin: 15,
-                marginLeft: 35,
-                marginTop: -50,
-                width: 35,
-              }}
-              onPress={handleReset}
-            >
-              <MaterialIcons name="undo" size={24} color="black" />
-            </TouchableOpacity>}
-            {!isAndroid && (
-              <View style={{
-                flex: 1,
-                flexDirection: "row",
-                alignItems: "center",
-                justifyContent: "space-between",
-              }}>
-                {changed && (
-                  <TouchableOpacity
-                    style={{
-                      margin: 15,
-                      marginLeft: 35,
-                      marginTop: -50,
-                      width: 35,
-                    }}
-                    onPress={handleReset}
-                  >
-                    <MaterialIcons name="undo" size={24} color="black" />
-                  </TouchableOpacity>
-                )}
-                <View></View>
-              </View>
-            )}
+            <View style={{
+              flex: 1,
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "space-between",
+            }}>
+              {changed && (
+                <TouchableOpacity
+                  style={{
+                    margin: 15,
+                    marginLeft: 35,
+                    marginTop: -50,
+                    width: 35,
+                  }}
+                  onPress={handleReset}
+                >
+                  <MaterialIcons name="undo" size={24} color="black" />
+                </TouchableOpacity>
+              )}
+              <View></View>
+            </View>
             <EditableKey
               profileKey="description"
               content={profile.description}
@@ -1098,7 +1084,7 @@ const styles = StyleSheet.create({
   },
   editCancel: {
     display: "flex",
-    flexDirection: buttonsFlexDirection,
+    flexDirection: "row",
     width: 150,
     marginHorizontal: 15,
     backgroundColor: "transparent",

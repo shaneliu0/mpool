@@ -72,7 +72,7 @@ function ChatContainer(props: ChatContainerProps) {
         >
           <View style={{ width: 100, marginRight: 20 }}>
             {(avatars && avatars.length) ? (
-              <Avatar.Group size="lg" max={2}>
+              <Avatar.Group max={2} _avatar={{ size: "lg" }}>
                 {renderAvatars()}
               </Avatar.Group>
             ) : null}
