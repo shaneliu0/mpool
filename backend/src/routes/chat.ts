@@ -143,7 +143,7 @@ router.get('/', async (req: any, res) => {
 
 // query params: offset: start @message id
 // returns up to 20 most recent chat messsages in this conversation.
-router.get('/:poolId', async (req: any, res) => {
+router.get('/:poolId', async (req:any, res) => {
     const { user } = req;
     const { offset } = req.query;
     const { poolId } = req.params;
@@ -158,7 +158,7 @@ router.get('/:poolId', async (req: any, res) => {
             include: {
                 PoolRequest: {
                     where: {
-                        userId: user.userId
+                        userId: user.uid
                     }
                 }
             }
@@ -240,7 +240,7 @@ router.post('/:poolId/markread', async (req, res) => {
             include: {
                 PoolRequest: {
                     where: {
-                        userId: user.userId
+                        userId: user.uid
                     }
                 }
             }

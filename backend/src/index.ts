@@ -44,6 +44,7 @@ async function decodeUserToken(req: any, res: any, next: any) {
         req.user = await admin
             .auth()
             .verifyIdToken(token);
+        req.user.userId = null;
         next();
     } catch (e) {
         return res.status(403).json({ error: "Error Authenticating!" })

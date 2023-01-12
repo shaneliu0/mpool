@@ -11,6 +11,7 @@ export interface Profile {
     name: string;
     description: string;
     content: ProfileContentBlock[];
+    errorMsg?: string;
 }
 export const defaultProfile: Profile = {
     photoUrl: "",

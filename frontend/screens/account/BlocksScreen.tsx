@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { ScrollView, TouchableOpacity, View } from 'react-native';
+import { RefreshControl, ScrollView, TouchableOpacity, View } from 'react-native';
 import { FadeInView } from '../../components/Animation';
 import Text from '../../components/StyledText';
 import { BlockedUser, getBlockedUsers, unblockUser } from '../../dataAccess/safety';
@@ -16,6 +16,7 @@ import { BlocksEmpty } from '../../components/Empties';
 export default function BlocksScreen() {
     const [blocks, setBlocks] = useState<BlockedUser[]>([]);
     const [loading, setLoading] = useState(true);
+    const [refreshing, setRefreshing] = useState(false);
 
     const handleDelete = (blockId: number) => () => {
         compatiblePrompt(
@@ -35,7 +36,7 @@ export default function BlocksScreen() {
                                 type: "success",
                                 text1: "User Unblocked."
                             });
-                            onRefresh();
+                            onRefreshFactory(false)();
                         } catch (error) {
                             Logging.Error(error);
                         }
@@ -48,19 +49,22 @@ export default function BlocksScreen() {
         );
     }
 
-    const onRefresh = async () => {
+    const onRefreshFactory = (shouldSetRefresh: boolean) => async () => {
+        shouldSetRefresh && setRefreshing(true);
         try {
             const resp = await getBlockedUsers();
             setBlocks(resp);
             setLoading(false);
         } catch (error) {
             Logging.Error(error);
+        } finally {
+            shouldSetRefresh && setRefreshing(false);
         }
     }
 
     useEffect(() => {
         if (loading) {
-            onRefresh();
+            onRefreshFactory(false)();
         }
     }, []);
 
@@ -68,7 +72,15 @@ export default function BlocksScreen() {
 
     return (
         <FadeInView>
-            <ScrollView scrollEnabled={blocks.length > 0}>
+            <ScrollView
+                refreshControl={
+                    <RefreshControl
+                        refreshing={refreshing}
+                        onRefresh={onRefreshFactory(true)}
+                    />
+                }
+                style={{ height: "100%" }}
+            >
                 <Text variant="h1">Blocked Users</Text>
                 {(() => {
                     if (blocks.length === 0) {

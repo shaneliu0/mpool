@@ -6,6 +6,7 @@ import { PoolRequestData } from "./types/dataAccess/poolData";
 import { pushAndEmailPersistent } from "./notify";
 import ms from 'ms';
 import { logError } from "./logging";
+import { getUserBlockedMessage } from "./permissions/safetyPerms";
 
 // the two user ids, sorted then joined.
 const duplicateCheck = new Set<string>();
@@ -54,6 +55,7 @@ export async function refreshAndPotentiallyMatchAll() {
         });
         unfulfilledRequests.push(...moreReqs);
     }
+
     for (const req of unfulfilledRequests) {
         let strengthFloor = 0.5;
         const daysFromDepart = (req.departTime.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24);
@@ -167,8 +169,7 @@ async function getPotentialUserMatches(requestId: number, limit: number = 10, of
                 from: true,
                 to: true,
             }
-        })
-
+        });
         const airportTerminalCat = placeCatEnum.airport_terminal;
 
         const fromIsAirportTerminal = poolReq.from.category === airportTerminalCat;
@@ -214,23 +215,28 @@ async function getPotentialUserMatches(requestId: number, limit: number = 10, of
             LIMIT ${limit}
             OFFSET ${offset}
         `;
+        console.log(rawResp);
         }
 
-        let orderedReqs = await Promise.all(rawResp.map(r => {
-            return prisma.poolRequest.findFirst({
+        // remove the requests that don't work, such as users blocked themselves,
+        // or one of the users already found a request.
+        let orderedReqs = await Promise.all(rawResp.map(async r => {
+            const preq = await prisma.poolRequest.findFirst({
                 where: {
                     requestId: r.requestId,
                     poolId: null,
                 },
-            }).then(foundR => {
-                if (!foundR) return null;
-                return { ...foundR, dist: r.dist };
             });
+            if (!preq) return null;
+            const bresp = await getUserBlockedMessage(poolReq.userId, preq.userId);
+            if (bresp) return null;
+
+            return { ...preq, dist: r.dist };
         }));
 
         let notNullOrderedReqs = orderedReqs.filter(r => r !== null) as PoolReqWithDist[];
 
-        if (notNullOrderedReqs.length < limit && rawResp.length == limit) {
+        if (notNullOrderedReqs.length < limit && rawResp.length === limit) {
             const nextReqs = await getPotentialUserMatches(requestId, limit, offset + limit);
             notNullOrderedReqs = notNullOrderedReqs.concat(nextReqs);
         }

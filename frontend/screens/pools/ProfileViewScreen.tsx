@@ -26,7 +26,7 @@ function ProfileActions(props: ProfileActionsProps) {
     } = props;
     const { showActionSheetWithOptions } = useActionSheet();
 
-    const handleBlock = async () => {
+    const executeBlock = async () => {
         try {
             if (!userId) throw new Error();
             await blockUser({ userId });
@@ -70,7 +70,7 @@ function ProfileActions(props: ProfileActionsProps) {
                                                     { text: 'Cancel', style: 'cancel' },
                                                     {
                                                         text: 'Block',
-                                                        onPress: handleBlock,
+                                                        onPress: executeBlock,
                                                         style: "destructive"
                                                     }
                                                 ],
@@ -96,7 +96,7 @@ function ProfileActions(props: ProfileActionsProps) {
                                     { text: 'Cancel', style: 'cancel' },
                                     {
                                         text: 'Block',
-                                        onPress: handleBlock,
+                                        onPress: executeBlock,
                                         style: "destructive"
                                     }
                                 ],
@@ -232,6 +232,18 @@ function ProfileViewScreen({ route, navigation }: RootTabScreenProps<'Pool'>) {
                     const resp = await getProfile((route.params as any).userId);
                     setProfile(resp);
                     setLoading(false);
+                    if (resp.errorMsg) {
+                        prompt(
+                            "Couldn't load",
+                            resp.errorMsg,
+                            [
+                                {
+                                    text: "OK",
+                                    onPress: () => navigation.goBack(),
+                                }
+                            ],
+                        )
+                    }
                 } catch (error) {
                     Logging.Error(error);
                 }

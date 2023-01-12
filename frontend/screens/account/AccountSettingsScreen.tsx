@@ -39,7 +39,7 @@ function AccountSettings({ navigation }: RootTabScreenProps<'Account'>) {
         try {
             prompt(
                 "We're sorry to see you go.",
-                `Enter "${confirmationText}" below to delete your account.`,
+                `Enter "${confirmationText}" below to confirm account deletion.`,
                 [
                     {
                         style: 'cancel',
@@ -61,7 +61,7 @@ function AccountSettings({ navigation }: RootTabScreenProps<'Account'>) {
                                 "Account Deleted",
                                 "Your account has been deleted and you have been signed out.",
                             );
-                            auth.signOut();
+                            // auth.signOut();
                         }
                     }
                 ],

@@ -1,6 +1,8 @@
 import express from 'express';
 import { resError } from '../logging';
-import { BlockedUser, PostReportData } from '../types/dataAccess/safety';
+import { getUserBlockedMessage } from '../permissions/safetyPerms';
+import { BlockedUser, BlockUserResp, PostReportData } from '../types/dataAccess/safety';
+import { MPOOL_USERID } from './pool/mPoolBot';
 
 const router = express.Router();
 
@@ -13,7 +15,7 @@ router.post('/report', async (req, res) => {
         await prisma.reports.create({
             data: {
                 reason: reason,
-                createdBy: { connect: { userId: user.userId } },
+                createdBy: { connect: { userId: user.uid } },
                 message: messageId ? { connect: { messageId: mid } } : undefined,
                 user: userId ? { connect: { userId: userId } } : undefined
             }
@@ -31,7 +33,7 @@ router.get('/block', async (req:any, res) => {
     try {
         const bresp = await prisma.blockedUser.findMany({
             where: {
-                blockedById: user.userId
+                blockedById: user.uid
             },
             include: {
                 user: true,
@@ -60,14 +62,36 @@ router.post('/block/:userId', async (req, res) => {
     const { userId } = req.params;
 
     try {
-        await prisma.blockedUser.create({
-            data: {
-                blockedById: user.userId,
+        if (user.uid === userId) {
+            return res.json({
+                msg: "You can't block yourself."
+            } as BlockUserResp);
+        };
+        if (userId === MPOOL_USERID) {
+            return res.json({
+                msg: "You can't block this bot."
+            } as BlockUserResp);
+        }
+        const checkExists = await prisma.blockedUser.findFirst({
+            where: {
+                blockedById: user.uid,
                 userId: userId
             }
+        })
+        if (checkExists) {
+            return res.json({
+                msg: "You already blocked this user. You can view your blocked users in settings."
+            } as BlockUserResp);
+        }
+
+        await prisma.blockedUser.create({
+            data: {
+                blockedBy: { connect: { userId: user.uid }},
+                user: { connect: { userId }}
+            },
         });
 
-        return res.sendStatus(200);
+        return res.json({} as BlockUserResp);
     } catch (error) {
         resError(res, error);
     }
@@ -87,8 +111,8 @@ router.delete('/block/:blockId', async (req, res) => {
                 blockId: bid,
             },
         });
-
-        if (!access || access.blockedById !== user.userId) {
+        
+        if (!access || access.blockedById !== user.uid) {
             return res.sendStatus(403);
         }
         

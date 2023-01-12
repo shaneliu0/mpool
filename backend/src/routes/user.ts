@@ -1,9 +1,11 @@
 import express from 'express';
 import { resError } from '../logging';
-import { CheckedInResp, Profile, ProfileContentBlock, ProfileContentPrompt } from '../types/dataAccess/users';
+import { CheckedInResp, defaultProfile, Profile, ProfileContentBlock, ProfileContentPrompt } from '../types/dataAccess/users';
 import admin from 'firebase-admin';
 import { checkSharedPool } from '../permissions/poolPerms';
 import { checkUserAllowed } from '../permissions/userPerms';
+import { getUserBlockedMessage } from '../permissions/safetyPerms';
+import { MPOOL_USERID } from './pool/mPoolBot';
 
 const auth = admin.auth();
 
@@ -75,6 +77,19 @@ router.get('/:userId/profile', async (req, res) => {
     const { userId } = req.params;
 
     try {
+        if (userId === MPOOL_USERID) {
+            return res.json({
+                ...defaultProfile,
+                errorMsg: "This bot does not have a profile."
+            } as Profile);
+        }
+        const blockMsg = await getUserBlockedMessage(user.uid, userId);        
+        if (blockMsg) {
+            return res.json({
+                ...defaultProfile,
+                errorMsg: blockMsg,
+            } as Profile);
+        }
         const resp = await getProfile(user.uid, userId);
         return res.json(resp);
     } catch (e) {
@@ -208,7 +223,8 @@ router.delete('/', async (req, res) => {
     const { user } = req;
 
     try {
-        // should reset the userid on firebase.
+        await auth.deleteUser(user.uid)
+
         return res.sendStatus(200);
     } catch (error) {
         resError(res, error);

@@ -13,8 +13,12 @@ export const postReport = async (data: PostReportData) => {
 export interface BlockUserData {
     userId: string;
 }
-export const blockUser = async (data: BlockUserData) => {
-    await axios.post(`/safety/block/${data.userId}`);
+export interface BlockUserResp {
+    msg?: string
+}
+export const blockUser = async (data: BlockUserData): Promise<BlockUserResp> => {
+    const resp = await axios.post<BlockUserResp>(`/safety/block/${data.userId}`);
+    return resp.data;
 }
 
 

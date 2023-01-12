@@ -11,7 +11,7 @@ import { getDatabase, ref, onValue } from "firebase/database";
 
 import { View } from '../../components/Themed';
 import { RootTabScreenProps } from '../../types';
-import { GiftedChat, IMessage } from 'react-native-gifted-chat';
+import { GiftedChat, IMessage, User } from 'react-native-gifted-chat';
 import Toast from 'react-native-toast-message';
 import { useSelector } from 'react-redux';
 import {
@@ -25,9 +25,9 @@ import Text from '../../components/StyledText';
 import { AntDesign } from '@expo/vector-icons';
 import { PoolView } from '../pools/PoolScreen';
 import { markPoolAsRead } from '../../dataAccess/chats';
-import { getPoolStatus } from '../../dataAccess/poolData';
+import { getPoolStatus, leavePool } from '../../dataAccess/poolData';
 import { MatchedPoolView } from '../pools/MatchedPoolScreen';
-import { postReport } from '../../dataAccess/safety';
+import { blockUser, postReport } from '../../dataAccess/safety';
 
 const db = getDatabase();
 
@@ -201,16 +201,110 @@ export default function Chats({ route, navigation }: RootTabScreenProps<'Chat'>)
     }
   }
 
+  const executeBlock = async (userId: string | number) => {
+    try {
+      const parsedUserId: string = typeof userId === 'string' ? userId : userId.toString();
+      const resp = await blockUser({ userId: parsedUserId });
+      if (resp.msg) {
+        return prompt(
+          resp.msg,
+        );
+      }
+      Toast.show({
+        type: "success",
+        text1: "User blocked.",
+      });
+      prompt(
+        'User blocked.',
+        'Would you also like to leave this pool?',
+        [
+          {
+            text: "No",
+          },
+          {
+            text: "Yes",
+            style: "destructive",
+            onPress: () => {
+              const handleLeavePool = () => {
+                prompt(
+                  'Leave Pool',
+                  'Are you sure? You can\'t join back.',
+                  [
+                    {
+                      text: 'Cancel',
+                      style: 'cancel',
+                    },
+                    {
+                      text: 'Leave',
+                      style: 'destructive',
+                      onPress: async () => {
+                        try {
+                          await leavePool(chatId);
+                          navigation.navigate('Chat', {
+                            screen: "Chats"
+                          } as never);
+                          setTimeout(() => {
+                            navigation.navigate('Pool', {
+                              screen: "Home"
+                            } as never);
+                            Toast.show({
+                              text1: 'Pool left.',
+                              type: 'success'
+                            })
+                          }, 1000);
+                        } catch (error) {
+                          Logging.Error(error);
+                        }
+                      }
+                    }
+                  ]
+                )
+              };
+              handleLeavePool();
+            }
+          }
+        ]
+      )
+    } catch (error) {
+      Logging.Error(error, { text1: "Error: couldn't block user.", });
+    }
+  }
+
+  const handleBlockMessageUser = async (message: IMessage) => {
+    try {
+      prompt(
+        "Block this user?",
+        "Blocking a user will prevent them from contacting or matching with you.",
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Block',
+            onPress: () => executeBlock(message.user._id),
+            style: "destructive"
+          }
+        ],
+        {
+          type: "default"
+        }
+      );
+    } catch (error) {
+      Logging.Error(error);
+    }
+  }
+
   const handleMsgLongPress = (context: any, message: IMessage) => {
     const options = [
       'Copy Text',
       'Report Message',
+      'Block User',
       'Cancel',
     ];
     const cancelButtonIndex = options.length - 1;
+    const destructiveButtonIndex = 2;
     context.actionSheet().showActionSheetWithOptions({
       options,
       cancelButtonIndex,
+      destructiveButtonIndex,
     },
       (buttonIndex: number) => {
         switch (buttonIndex) {
@@ -219,8 +313,19 @@ export default function Chats({ route, navigation }: RootTabScreenProps<'Chat'>)
             break;
           case 1:
             handleReportMessage(message);
+            break;
+          case 2:
+            handleBlockMessageUser(message);
         }
       });
+  }
+
+  const handleAvatarPress = (user: User) => {
+    const parsedUserId = String(user._id);
+    navigation.navigate('Chat', {
+      screen: "ProfileView",
+      params: { userId: parsedUserId },
+    } as never);
   }
 
   if (!route.params) return <Heading>Couldn't find the requested chat.</Heading>
@@ -243,11 +348,14 @@ export default function Chats({ route, navigation }: RootTabScreenProps<'Chat'>)
           infiniteScroll={true}
           renderUsernameOnMessage={true}
           onLongPress={handleMsgLongPress}
+          onPressAvatar={handleAvatarPress}
+          wrapInSafeArea={false}
         />
       </View>
     </>
   )
 }
+
 
 const styles = StyleSheet.create({
   container: {

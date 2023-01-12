@@ -1,11 +1,13 @@
 import { iteratorSymbol } from "immer/dist/internal";
 import React, { useEffect, useState } from "react";
-import { ActivityIndicator, Dimensions, FlatList, StyleProp, StyleSheet, useColorScheme, View } from "react-native";
+import { ActivityIndicator, Dimensions, FlatList, Platform, StyleProp, StyleSheet, useColorScheme, View } from "react-native";
 import { TouchableOpacity } from "react-native-gesture-handler";
 import Animated, { useAnimatedStyle, useSharedValue, withDelay, withTiming } from "react-native-reanimated";
 import Text, { CustomTextProps } from '../components/StyledText';
-import MapView, { LatLng, Marker } from 'react-native-maps';
+import MapView, { LatLng, Marker, Provider, PROVIDER_DEFAULT, PROVIDER_GOOGLE, } from 'react-native-maps';
 import { useTheme } from "native-base";
+
+const mapsProvider: Provider = Platform.OS === "android" ? PROVIDER_GOOGLE : PROVIDER_DEFAULT;
 
 interface PositionedMapProps {
     fromCoords: LatLng;
@@ -25,6 +27,7 @@ export function PositionedMap(props: PositionedMapProps) {
                 latitudeDelta: 0.0922 * 2.5,
                 longitudeDelta: 0.0421 * 2.5
             }}
+            provider={mapsProvider}
         >
             <Marker
                 key="start"

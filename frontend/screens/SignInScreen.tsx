@@ -163,7 +163,7 @@ export default function SignInScreen(props: any) {
 
     const [request, response, promptAsync] = Google.useAuthRequest({
         iosClientId: "YOUR_OAUTH_CLIENT_ID.apps.googleusercontent.com",
-        androidClientId: "YOUR_OAUTH_CLIENT_ID.apps.googleusercontent.com", // invalid
+        androidClientId: "YOUR_OAUTH_CLIENT_ID.apps.googleusercontent.com",
         expoClientId: "YOUR_OAUTH_CLIENT_ID.apps.googleusercontent.com",
     });
 
