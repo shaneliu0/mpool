@@ -13,6 +13,7 @@ import { DateTimeSelector, FlexiblePlacesSelector, PlaceInputModal, SingleSelect
 import Toast from 'react-native-toast-message';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import StyledButton from '../../components/Button';
+import prompt from '../../components/PromptProvider';
 
 interface PoolRequestProps {
     seasonId: number;
@@ -56,7 +57,7 @@ function PoolRequest(props: PoolRequestProps) {
                         try {
                             await cancelPoolRequest(requestId);
                             navigation.navigate('Pool', {
-                                screen: "Home" 
+                                screen: "Home"
                             } as never)
                         } catch (error) {
                             Logging.Error(error);
@@ -71,8 +72,8 @@ function PoolRequest(props: PoolRequestProps) {
 
     const onDateChange = (_: any, selectedDate: any) => {
         const currentDate = selectedDate || newDate;
-        setHasEditedDate(true);
         setNewDate(currentDate);
+        setHasEditedDate(true);
     };
 
     const handleExpandEdit = (eidx: number) => () => {
@@ -92,6 +93,27 @@ function PoolRequest(props: PoolRequestProps) {
             (async () => {
                 try {
                     const resp = await getPoolRequest(irid);
+                    if (resp.matchId) {
+                        prompt(
+                            "You have a match for this season!",
+                            undefined,
+                            [
+                                {
+                                    text: "Cancel",
+                                    style: "cancel"
+                                },
+                                {
+                                    text: "Go to match",
+                                    onPress: () => {
+                                        return navigation.navigate('Pool', {
+                                            screen: 'MatchedPoolScreen',
+                                            params: { matchId: resp.matchId }
+                                        } as never);
+                                    }
+                                }
+                            ]
+                        )
+                    }
                     setRequest(resp);
                     setNewDate(new Date(resp.departTime));
                     setNewFrom(resp.from);

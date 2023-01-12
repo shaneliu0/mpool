@@ -1,7 +1,6 @@
 import { iteratorSymbol } from "immer/dist/internal";
 import React, { useEffect, useState } from "react";
-import { ActivityIndicator, Dimensions, FlatList, Platform, StyleProp, StyleSheet, useColorScheme, View } from "react-native";
-import { TouchableOpacity } from "react-native-gesture-handler";
+import { ActivityIndicator, Dimensions, FlatList, Platform, StyleProp, StyleSheet, useColorScheme, View, TouchableOpacity } from "react-native";
 import Animated, { useAnimatedStyle, useSharedValue, withDelay, withTiming } from "react-native-reanimated";
 import Text, { CustomTextProps } from '../components/StyledText';
 import MapView, { LatLng, Marker, Provider, PROVIDER_DEFAULT, PROVIDER_GOOGLE, } from 'react-native-maps';

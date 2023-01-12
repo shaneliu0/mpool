@@ -134,13 +134,14 @@ interface TextButtonProps {
     children: React.ReactText;
     color?: ColorTypes;
     onPress: () => void;
+    style?: StyleProp<any>;
 }
 export function TextButton(props: TextButtonProps) {
-    const { children, onPress, color } = props;
+    const { children, onPress, color, style } = props;
 
     return (
         <>
-            <TouchableOpacity onPress={onPress} style={{ margin: 10, marginTop: isAndroid ? 15 : 20, }}>
+            <TouchableOpacity onPress={onPress} style={[{ margin: 10, marginTop: isAndroid ? 15 : 20, }, style]}>
                 <Text style={{
                     fontSize: 20,
                     color: color === 'secondary' ? "black" : "#007AFF",

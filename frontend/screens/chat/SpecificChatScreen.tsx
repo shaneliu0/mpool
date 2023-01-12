@@ -350,6 +350,7 @@ export default function Chats({ route, navigation }: RootTabScreenProps<'Chat'>)
           onLongPress={handleMsgLongPress}
           onPressAvatar={handleAvatarPress}
           wrapInSafeArea={false}
+          bottomOffset={0}
         />
       </View>
     </>

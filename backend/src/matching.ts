@@ -175,7 +175,10 @@ async function getPotentialUserMatches(requestId: number, limit: number = 10, of
         const fromIsAirportTerminal = poolReq.from.category === airportTerminalCat;
 
 
+        // has to be the utc time zone offset ahead! 5 hours ahead for eastern time.
+        // z at time zone means utc. computer converts minus 5 hours back to eastern time.
         const correctDate = getCorrectDate(poolReq.departTime);
+        // const correctDate = poolReq.departTime;
 
         const leftLim = new Date(correctDate);
         leftLim.setHours(leftLim.getHours() - hourOffset);
@@ -183,12 +186,11 @@ async function getPotentialUserMatches(requestId: number, limit: number = 10, of
         rightLim.setHours(rightLim.getHours() + hourOffset);
         const fromCoords = (await getLatLngs([poolReq.from.placeId]))[0];
         const toCoords = (await getLatLngs([poolReq.to.placeId]))[0];
-
         let rawResp: { requestId: number, dist: number }[] = [];
-
+        
         if (fromIsAirportTerminal) {
             const asEWKT = `SRID=3857;POINT(${toCoords.longitude} ${toCoords.latitude})`;
-
+            
             rawResp = await prisma.$queryRaw`
             SELECT "requestId",
                 "Place"."coords" <-> ${asEWKT} AS dist
@@ -215,7 +217,6 @@ async function getPotentialUserMatches(requestId: number, limit: number = 10, of
             LIMIT ${limit}
             OFFSET ${offset}
         `;
-        console.log(rawResp);
         }
 
         // remove the requests that don't work, such as users blocked themselves,

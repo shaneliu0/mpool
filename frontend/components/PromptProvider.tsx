@@ -1,7 +1,9 @@
-import { Platform, StyleSheet, View } from "react-native";
+import { BackHandler, Platform, StyleSheet, View } from "react-native";
 import prompt, { PromptOptions } from "react-native-prompt-android";
 import Dialog from 'react-native-dialog';
 import React, { useEffect, useState } from "react";
+import { useBackHandler } from '@react-native-community/hooks'
+
 
 let androidPromptRef: (title: string, message: string, buttons: Array<PromptButton>, options: PromptOptions) => void;
 let promptLastCancelled = 0;
@@ -78,7 +80,7 @@ export function AndroidPromptProvider() {
 
     return (
         <View style={[StyleSheet.absoluteFill, styles.container]}>
-            <Dialog.Container visible={visible}>
+            <Dialog.Container visible={visible} onRequestClose={() => setVisible(false)}>
                 <Dialog.Title>{title}</Dialog.Title>
                 {message ? (
                     <Dialog.Description>

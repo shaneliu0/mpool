@@ -52,7 +52,7 @@ export function PageSheetModal(props: PageSheetModalProps) {
                 <Text variant="subtitle" style={{ fontSize: 20, }}>{title}</Text>
                 {(() => {
                     if (altAction && altAction.loading) {
-                        return <TextButton onPress={altAction.action}>{altAction.loadingText}</TextButton>
+                        return <TextButton onPress={altAction.action} style={{ }}>{altAction.loadingText}</TextButton>
                     }
                     if (altAction && !altAction.loading) {
                         return <TextButton onPress={altAction.action}>{altAction.text}</TextButton>

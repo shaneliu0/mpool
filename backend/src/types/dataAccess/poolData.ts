@@ -70,6 +70,7 @@ export interface PoolRequestData {
     from: PoolPlace;
     to: PoolPlace;
     destinations: PoolPlaceCategory[];
+    matchId?: number;
 }
 export const defaultPoolRequestData: PoolRequestData = {
     requestId: -1,

@@ -14,8 +14,9 @@ export function databaseReadyTime(time: Date) {
 }
 
 export function getCorrectDate(date: Date) {
-    const adjusted = new Date(Date.parse(date.toUTCString()) - date.getTimezoneOffset() * 60000);
-    adjusted.setHours(adjusted.getHours() + 12);
+    const hoursOffset = new Date().getTimezoneOffset() / 60;
+    const adjusted = new Date(date.getTime() + hoursOffset * 60 * 60 * 1000);
+    // adjusted.setHours(adjusted.getHours() + 12);
     return new Date(adjusted);
 }
 

@@ -1,14 +1,12 @@
-import React, { useContext, useEffect, useRef, useState } from "react";
-import { Platform, StyleSheet, Button, useColorScheme, Modal, ScrollView, TextInput, } from "react-native";
+import React, { useContext, useEffect, useState } from "react";
+import { Platform, StyleSheet, Button, useColorScheme, Modal, ScrollView } from "react-native";
 import DateTimePicker from '@react-native-community/datetimepicker';
 import moment from 'moment';
 
 import { Text, View } from '../components/Themed';
 
 import {
-    CheckIcon,
-    Divider,
-    Heading,
+    CheckIcon, Heading,
     IconButton,
     Input,
     Menu,
@@ -23,7 +21,6 @@ import { MaterialIcons } from "@expo/vector-icons";
 import * as Logging from '../Logging';
 import { defaultPoolPlace, PoolPlace, PoolPlaceCategory } from "../dataAccess/poolData";
 import { Toast } from "react-native-toast-message/lib/src/Toast";
-import { TouchableOpacity } from "react-native-gesture-handler";
 
 interface PlacesSelectorProps {
     onSelect: (place: GooglePlaceData, details: GooglePlaceDetail | null) => void;
@@ -342,6 +339,7 @@ export function DateTimeSelector(props: DateTimeSelectorProps) {
                                 onSelect(event, selectedDate);
                             }}
                             style={styles.datePicker}
+                            minuteInterval={minuteInterval}
                         />
                     )}
                     {dateSelectorOpen && (
@@ -356,6 +354,7 @@ export function DateTimeSelector(props: DateTimeSelectorProps) {
                                 onSelect(event, selectedDate);
                             }}
                             style={styles.datePicker}
+                            minuteInterval={minuteInterval}
                         />
                     )}
                 </HStack>

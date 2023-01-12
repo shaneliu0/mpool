@@ -42,6 +42,7 @@ import CustomHomeHeader from './headers/CustomHomeHeader';
 import CustomAccountHeader from './headers/CustomAccountHeader';
 import AccountSettings from '../screens/account/AccountSettingsScreen';
 import BlocksScreen from '../screens/account/BlocksScreen';
+import { navigationRef } from './RootNavigation';
 
 export default function Navigation({ colorScheme }: { colorScheme: ColorSchemeName }) {
   const user = useSelector((state: any) => state.auth.user);
@@ -57,7 +58,9 @@ export default function Navigation({ colorScheme }: { colorScheme: ColorSchemeNa
   return (
     <NavigationContainer
       linking={LinkingConfiguration}
-      theme={theme}>
+      theme={theme}
+      ref={navigationRef}
+    >
       {user ? <RootNavigator /> : <SignInNavigator />}
     </NavigationContainer>
   );

@@ -31,7 +31,7 @@ export default function useCachedResources() {
 
                 setInterval(async () => {
                   axios.defaults.headers.common['Authorization'] = "Bearer " + await user.getIdToken(true);
-                  console.log('Refreshed auth token!');
+                  // console.log('Refreshed auth token!');
                 }, 60 * 60 * 1000)
                 // console.log(idToken);
                 axios.defaults.headers.common['Authorization'] = "Bearer " + idToken;

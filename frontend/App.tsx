@@ -6,7 +6,9 @@ import * as Device from 'expo-device';
 import * as Notifications from 'expo-notifications';
 import React, { useEffect, useRef, useState } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { LogBox, Platform } from 'react-native';
+import { Linking, LogBox, Platform } from 'react-native';
+import * as RootNavigation from './navigation/RootNavigation';
+import { CommonActions } from '@react-navigation/native';
 
 import axios from 'axios';
 
@@ -91,7 +93,7 @@ function App() {
       });
 
       responseListener.current = Notifications.addNotificationResponseReceivedListener(response => {
-        console.log(response);
+        handleNotificationData(response.notification.request.content.data);
       });
 
       return () => {
@@ -129,16 +131,37 @@ export default function WithReduxApp() {
   )
 }
 
-async function schedulePushNotification() {
-  await Notifications.scheduleNotificationAsync({
-    content: {
-      title: "You've got mail! 📬",
-      body: 'Here is the notification body',
-      data: { data: 'goes here' },
-    },
-    trigger: { seconds: 2 },
-  });
+function handleNotificationData(data: any) {
+  const NAV_TIMEOUT = 250;
+  if (data.chatId) {
+    RootNavigation.navigate('Chat', {});
+    setTimeout(() => {
+      RootNavigation.navigate('Chat', {
+        screen: 'SpecificChat',
+        params: { chatId: data.chatId }
+      } as never);
+    }, NAV_TIMEOUT);
+  } else if (data.matchId) {
+    RootNavigation.navigate('Pool', {});
+    setTimeout(() => {
+      RootNavigation.navigate('Pool', {
+        screen: "MatchedPoolScreen",
+        params: { matchId: data.matchId }
+      })
+    }, NAV_TIMEOUT);
+  }
 }
+
+// async function schedulePushNotification() {
+//   await Notifications.scheduleNotificationAsync({
+//     content: {
+//       title: "You've got mail! 📬",
+//       body: 'Here is the notification body',
+//       data: { data: 'goes here' },
+//     },
+//     trigger: { seconds: 2 },
+//   });
+// }
 
 async function registerForPushNotificationsAsync(userId: string) {
   let token;

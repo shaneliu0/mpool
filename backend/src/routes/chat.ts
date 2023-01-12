@@ -311,7 +311,7 @@ export async function sendRealtimeMessage(poolId: number, fromId: string, conten
     });
 
     // if there is no read ping from the user within 3 seconds, send a push notification
-    const READ_PING_TIMEOUT = 3000;
+    const READ_PING_TIMEOUT = 2000;
     setTimeout(async () => {
         try {
             const unread = await prisma.unreadMessage.findMany({
@@ -320,7 +320,7 @@ export async function sendRealtimeMessage(poolId: number, fromId: string, conten
                 }
             });
             const unreadUsers = unread.map(({ userId }) => userId);
-            await batchSendPushNotifications(unreadUsers, `MPool`, `[${message.sender.displayName}]: ${content}`);
+            await batchSendPushNotifications(unreadUsers, `MPool`, `[${message.sender.displayName}]: ${content}`, { chatId: message.poolId });
         } catch (error) {
             logError(error);
         }

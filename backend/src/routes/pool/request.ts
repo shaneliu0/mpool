@@ -41,6 +41,19 @@ router.get('/:requestId', async (req, res) => {
 
         const [fromLoc, toLoc] = await getLatLngs([request.from.placeId, request.to.placeId]);
 
+        const potentialMatch = await prisma.potentialMatch.findFirst({
+            where: {
+                users: {
+                    some: {
+                        userId: user.uid
+                    }
+                },
+                seasonId: request.seasonId,
+                declined: false,
+                derivedPoolId: null,
+            }
+        });
+
         return res.json({
             requestId: request.requestId,
             seasonName: request.season.name,
@@ -60,6 +73,7 @@ router.get('/:requestId', async (req, res) => {
                 coords: { latitude: toLoc.latitude, longitude: toLoc.longitude }
             },
             destinations: dests,
+            matchId: potentialMatch?.potentialMatchId,
         } as PoolRequestData)
     } catch (e) {
         return resError(res, e);
@@ -151,7 +165,14 @@ router.post('/:requestId/validate', async (req, res) => {
 
         const newFromCategory = newFrom?.category || originalRequest.from.category;
         const newToCategory = newTo?.category || originalRequest.to.category;
+        const newFromId = newFrom?.placeId || originalRequest.from.placeId;
+        const newToId = newTo?.placeId || originalRequest.to.placeId;
 
+        if (newFromId === newToId) {
+            return res.json({
+                errorMsg: "Couldn't save: Pickup and destination locations cannot be the same."
+            } as ValidateUpdatePoolRequestResp);
+        }
         if (![newFromCategory, newToCategory].includes(placeCatEnum.airport_terminal)) {
             return res.json({
                 errorMsg: "Couldn't save: Either pickup or destination location must be an airport terminal. Change the other location and it will save."

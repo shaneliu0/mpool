@@ -41,7 +41,7 @@ const ticketIdToPushToken = new Map<string, string>();
 //     processTokenQueue();
 // }, ms('15m'))
 
-export async function pushAndEmailPersistent(recipientId: string, title: string, body: string, type: NotificationType, payload: any) {
+export async function pushAndEmailPersistent(recipientId: string, title: string, body: string, type: NotificationType, payload?: any) {
     try {
         await prisma.notification.create({
             data: {
@@ -81,7 +81,7 @@ export async function pushAndEmailPersistent(recipientId: string, title: string,
     }
 }
 
-export async function batchSendPushNotifications(recipientIds: string[], title: string, body: string) {
+export async function batchSendPushNotifications(recipientIds: string[], title: string, body: string, payload?: any) {
     try {
         const pushTokens = await prisma.notificationTokens.findMany({
             where: { userId: { in: recipientIds } },
@@ -101,6 +101,7 @@ export async function batchSendPushNotifications(recipientIds: string[], title: 
                 to: pushToken.expoPushToken,
                 title: title,
                 body: body,
+                data: payload,
                 sound: "default",
             });
         }
