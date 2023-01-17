@@ -14,6 +14,7 @@ import prompt from '../../components/PromptProvider';
 import Toast from "react-native-toast-message";
 import { blockUser, postReport } from "../../dataAccess/safety";
 import { useSelector } from "react-redux";
+import { ProfileContentEmpty } from "../../components/Empties";
 
 interface ProfileActionsProps {
     userId?: string;
@@ -165,6 +166,9 @@ export function ProfileDisplay(props: Profile & ProfileDisplayProps) {
     const user = useSelector((state: any) => state.auth.user);
 
     const renderContent = () => {
+        if (!content.length) {
+            return <ProfileContentEmpty />
+        }
         return content.map((d, idx) => {
             return <ProfileContentBlock key={idx} {...d} />
         })
@@ -208,7 +212,7 @@ export function ProfileDisplay(props: Profile & ProfileDisplayProps) {
                     height: 100,
                 }}>
                     <Text variant="h1">{name}</Text>
-                    <Text variant="body">{description}</Text>
+                    <Text variant="body">{description || "No description."}</Text>
                 </View>
             </View>
             <View style={{

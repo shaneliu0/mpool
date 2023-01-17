@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { useContext, useEffect, useState } from 'react';
 
-import { Alert, Modal, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
+import { Alert, Modal, RefreshControl, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
 
 import Toast from 'react-native-toast-message';
 
@@ -127,15 +127,19 @@ function HomeFeed(props: PoolSearchProps) {
     const user = useSelector(selectUser);
     const [poolSeasons, setPoolSeasons] = useState<PoolSeasonData[]>([]);
     const [loadingPoolSeasons, setLoadingPoolSeasons] = useState<boolean>(true);
+    const [pullDownRefreshing, setPullDownRefreshing] = useState(false);
     const [expandedPoolIdx, setExpandedPoolIdx] = useState(-1);
 
-    const onRefresh = (async () => {
+    const onRefresh = (async (setPullDownToRefresh = false) => {
+        if (setPullDownToRefresh) setPullDownRefreshing(true);
         try {
             const resp = await getPoolSeasons();
             setPoolSeasons(resp);
             setLoadingPoolSeasons(false);
         } catch (e) {
             Logging.Error(e);
+        } finally {
+            if (setPullDownToRefresh) setPullDownRefreshing(false);
         }
     });
 
@@ -175,7 +179,12 @@ function HomeFeed(props: PoolSearchProps) {
     };
 
     return (
-        <ScrollView style={styles.fullWidth}>
+        <ScrollView
+            style={styles.fullWidth}
+            refreshControl={
+                <RefreshControl refreshing={pullDownRefreshing} onRefresh={() => onRefresh(true)} />
+            }
+        >
             <Text variant="h1">Hi {user?.displayName && user?.displayName.split(' ')[0]}!</Text>
             <Text variant="h2">Break is just around the corner!</Text>
             <Text variant="subtitle">Upcoming Seasons</Text>

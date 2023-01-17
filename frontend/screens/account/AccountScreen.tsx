@@ -114,7 +114,7 @@ function EditableKey(props: EditableKeyProps) {
       }}>
         <TouchableOpacity style={styles.profileItem} onPress={handleOpen}>
           <Text variant="body" style={styles.profileItemName}>{dname}</Text>
-          <Text variant="body" style={styles.profileItemValue} numberOfLines={1} ellipsizeMode="tail">{content}</Text>
+          <Text variant="body" style={styles.profileItemValue} numberOfLines={1} ellipsizeMode="tail">{content || "[tap to edit]"}</Text>
         </TouchableOpacity>
       </View>
       {realOpen && (
@@ -372,7 +372,7 @@ function EditableContent(props: EditableContentProps) {
               <Text variant="h1">{heading}</Text>
             </Animated.View>
             <Animated.View style={[animatedTextFieldViewStyle, styles.transparent, { padding: 15, }]}>
-              <Input multiline value={text} onChangeText={handleTextChange} variant="underlined" placeholder={`New ${heading.toLowerCase()}`} />
+              <Input autoFocus multiline value={text} onChangeText={handleTextChange} variant="underlined" placeholder={`New ${heading.toLowerCase()}`} />
               <Animated.View style={aniamtedTilesStyle}>
                 <ChipContainer noPadding>
                   {(tiles || []).map((t, idx) => {
@@ -383,7 +383,7 @@ function EditableContent(props: EditableContentProps) {
                     )
                   })}
                   <TouchableOpacity onPress={handleTileAdd}>
-                    <Chip key="add" content=" + " />
+                    <Chip key="add" content=" + Add a tile" />
                   </TouchableOpacity>
                 </ChipContainer>
               </Animated.View>
@@ -648,6 +648,7 @@ function AddContent(props: AddContentProps) {
       <View style={styles.container}>
         <TouchableOpacity style={styles.addContentButtonStyle} onPress={handleOpen}>
           <Ionicons name="add" size={50} color="black" />
+          <Text style={{ marginTop: 0, marginLeft: 0 }}>Add content</Text>
         </TouchableOpacity>
       </View>
       {realOpen && (
@@ -707,12 +708,12 @@ function AddContent(props: AddContentProps) {
                       {(tiles || []).map((t, idx) => {
                         return (
                           <TouchableOpacity key={idx} onPress={() => handleTileRemove(idx)}>
-                            <Chip key={idx} content={t + "  ⓧ"} />
+                            <Chip key={idx} content={"ⓧ  " + t} />
                           </TouchableOpacity>
                         )
                       })}
                       <TouchableOpacity onPress={handleTileAdd}>
-                        <Chip key="add" content=" + " />
+                        <Chip key="add" content=" + Add a tile " />
                       </TouchableOpacity>
                     </ChipContainer>
                   </Animated.View>

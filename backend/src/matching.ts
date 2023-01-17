@@ -55,7 +55,7 @@ export async function refreshAndPotentiallyMatchAll() {
         });
         unfulfilledRequests.push(...moreReqs);
     }
-
+    
     for (const req of unfulfilledRequests) {
         let strengthFloor = 0.5;
         const daysFromDepart = (req.departTime.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24);

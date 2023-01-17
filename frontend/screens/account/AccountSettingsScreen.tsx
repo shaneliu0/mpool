@@ -61,7 +61,7 @@ function AccountSettings({ navigation }: RootTabScreenProps<'Account'>) {
                                 "Account Deleted",
                                 "Your account has been deleted and you have been signed out.",
                             );
-                            // auth.signOut();
+                            auth.signOut();
                         }
                     }
                 ],

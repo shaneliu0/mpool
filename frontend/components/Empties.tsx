@@ -33,6 +33,19 @@ export function BlocksEmpty() {
   )
 }
 
+export function ProfileContentEmpty() {
+  return (
+    <View style={[
+      styles.container,
+      {
+        marginTop: -100,
+      }
+    ]}>
+      <StyledText variant="bodylarge" style={styles.text}>This profile does not have any content.</StyledText>
+    </View>
+  )
+}
+
 const styles = StyleSheet.create({
   text: {
     textAlign: 'center',

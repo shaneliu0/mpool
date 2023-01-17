@@ -12,7 +12,7 @@ datasource db {
 
 model User {
   userId             String               @id
-  email              String               @unique
+  email              String               
   displayName        String
   photoUrl           String
   requests           PoolRequest[]

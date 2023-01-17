@@ -87,7 +87,7 @@ export function AndroidPromptProvider() {
                         {message}
                     </Dialog.Description>
                 ) : null}
-                {options.type === "plain-text" && <Dialog.Input onChangeText={(t) => setInput(t)} />}
+                {options.type === "plain-text" && <Dialog.Input onChangeText={(t) => setInput(t)} autoFocus />}
                 {buttons.map((button, index) => {
                     if (button.style === "cancel") {
                         return <Dialog.Button key={index} label={button.text} onPress={handleCancel} />
