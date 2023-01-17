@@ -50,7 +50,17 @@ router.get('/:requestId', async (req, res) => {
                 },
                 seasonId: request.seasonId,
                 declined: false,
-                derivedPoolId: null,
+                OR: [
+                    { derivedPoolId: null },
+                    { derivedPool: { disabled: false } },
+                ]
+            },
+            include: {
+                derivedPool: true,
+                users: true,
+            },
+            orderBy: {
+                createdAt: 'desc',
             }
         });
 

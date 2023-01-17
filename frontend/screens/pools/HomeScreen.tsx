@@ -87,7 +87,8 @@ function WelcomeModal(props: WelcomeModalProps) {
                             "As we get closer to your departure date, we loosen up the matching criteria so it's more likely that you find a match.",
                             "We'll send a notification when we find a match.",
                             "When a match is found, you will see the location and time that is closest to everyone. You can accept the match or decline and wait for a new match.",
-                            "You can view your match by tapping the notification bell."
+                            "You can view your match by tapping the notification bell.",
+                            "When you join a pool, your name is shared with your pool members."
                         ]}
                         variant='bodylarge'
                     />

@@ -98,9 +98,9 @@ model Pool {
   toId             String?
   disabled         Boolean          @default(false)
   message          Message[]
-  PoolRequest      PoolRequest[]
-  PotentialMatch   PotentialMatch[] @relation("matched")
-  DerivedFromMatch PotentialMatch[] @relation("derived")
+  PoolRequest      PoolRequest[]    // these pool request users have accepted and are in the pool
+  PotentialMatch   PotentialMatch[] @relation("matched")    // these are matches that have been made directly to the pool
+  DerivedFromMatch PotentialMatch[] @relation("derived")    // these the match which the pool has been created from.
   UnreadMessage    UnreadMessage[]
 }
 

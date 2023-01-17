@@ -2,7 +2,7 @@ import { MaterialIcons } from "@expo/vector-icons";
 import { HStack, IconButton, Heading } from "native-base";
 import React, { useContext, useEffect } from "react";
 
-import { BackHandler, Modal, StyleSheet, View } from 'react-native';
+import { BackHandler, Modal, Platform, StyleSheet, View } from 'react-native';
 import { ThemeContext } from "../Context";
 import { TextButton } from "./Button";
 import { Loading } from "./Display";
@@ -52,7 +52,7 @@ export function PageSheetModal(props: PageSheetModalProps) {
                 <Text variant="subtitle" style={{ fontSize: 20, }}>{title}</Text>
                 {(() => {
                     if (altAction && altAction.loading) {
-                        return <TextButton onPress={altAction.action} style={{ }}>{altAction.loadingText}</TextButton>
+                        return <TextButton onPress={altAction.action} style={{ marginTop: Platform.OS === 'android' ? 14 : 18 }}>{altAction.loadingText}</TextButton>
                     }
                     if (altAction && !altAction.loading) {
                         return <TextButton onPress={altAction.action}>{altAction.text}</TextButton>

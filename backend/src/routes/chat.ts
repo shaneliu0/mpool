@@ -3,8 +3,10 @@ import admin from 'firebase-admin';
 import moment from 'moment';
 import { logError, resError } from '../logging';
 import { batchSendPushNotifications } from '../notify';
-import { getAllPoolMembers } from './pool/pool';
+import { getAllPoolMembers, getMatchedPool } from './pool/pool';
 import { checkUserMiddleware } from '../permissions/userPerms';
+import { ChatStatusResp } from '../types/dataAccess/chats';
+import { acceptMatchRequest } from '../routes/pool/pool';
 
 const db = admin.database();
 
@@ -143,7 +145,7 @@ router.get('/', async (req: any, res) => {
 
 // query params: offset: start @message id
 // returns up to 20 most recent chat messsages in this conversation.
-router.get('/:poolId', async (req:any, res) => {
+router.get('/:poolId', async (req: any, res) => {
     const { user } = req;
     const { offset } = req.query;
     const { poolId } = req.params;
@@ -151,9 +153,10 @@ router.get('/:poolId', async (req:any, res) => {
     if (!user) return res.status(403).send('Unauthorized.');
 
     try {
-        const verifyPermission = await prisma.pool.findUnique({
+        const verifyPermission = await prisma.pool.findFirst({
             where: {
                 poolId: parseInt(poolId),
+                disabled: false,
             },
             include: {
                 PoolRequest: {
@@ -198,6 +201,42 @@ router.get('/:poolId', async (req:any, res) => {
     }
 });
 
+router.get('/:poolId/status', async (req, res) => {
+    const { user } = req;
+    const { poolId } = req.params;
+    try {
+        const pid = parseInt(poolId);
+        if (isNaN(pid)) return res.sendStatus(400);
+        const verifyPermission = await prisma.pool.findUnique({
+            where: {
+                poolId: pid,
+            },
+            include: {
+                PoolRequest: {
+                    where: {
+                        userId: user.uid
+                    }
+                }
+            }
+        });
+        if (!verifyPermission) return res.status(403).send('Unauthorized.');
+
+        const processedPool = await getMatchedPool(pid, user.uid);
+        if (!processedPool) return res.sendStatus(404);
+
+        if (processedPool.status === 'potential') {
+            return res.json({
+                text1: "You aren't in this pool yet.",
+                text2: "Sending a message here will automatically add you.",
+            } as ChatStatusResp);
+        }
+
+        return res.json({} as ChatStatusResp);
+    } catch (error) {
+        resError(res, error);
+    }
+});
+
 router.post('/:poolId', async (req: any, res) => {
     const { user } = req;
     const { text } = req.body;
@@ -206,6 +245,7 @@ router.post('/:poolId', async (req: any, res) => {
     if (!user) return res.status(403).send('Unauthorized.');
 
     try {
+        const pid = parseInt(poolId);
         const verifyPermission = await prisma.pool.findUnique({
             where: {
                 poolId: parseInt(poolId),
@@ -219,9 +259,41 @@ router.post('/:poolId', async (req: any, res) => {
             }
         });
         if (!verifyPermission) return res.status(403).send('Unauthorized.');
-        const pid = parseInt(poolId);
+
+        let infoMsg = undefined;
+        // check if the user is in the pool.
+        const inPool = verifyPermission.PoolRequest.some(r => r.userId === user.uid);
+        if (!inPool) {
+            const match = await prisma.potentialMatch.findFirst({
+                where: {
+                    users: {
+                        some: {
+                            userId: user.uid
+                        }
+                    },
+                    OR: [
+                        {
+                            poolId: pid
+                        },
+                        {
+                            derivedPoolId: pid
+                        }
+                    ]
+                }
+            });
+            
+            if (match) {
+                await acceptMatchRequest(match?.potentialMatchId, user.uid);
+                infoMsg = 'You were automatically added to this pool.';
+            } else {
+                console.error(`Couldn't add user ${user.uid} to pool ${pid}`)
+            }
+        }
         const rmessage = await sendRealtimeMessage(pid, user.uid, text);
-        return res.json(rmessage);
+        return res.json({
+            ...rmessage,
+            infoMsg: infoMsg,
+        });
     } catch (error) {
         console.error(error);
         res.status(500).send('Something went wrong.');
@@ -320,6 +392,7 @@ export async function sendRealtimeMessage(poolId: number, fromId: string, conten
                 }
             });
             const unreadUsers = unread.map(({ userId }) => userId);
+            // await batchSendPushNotifications(unreadUsers, `MPool`, `[${message.sender.displayName}]: ${content}`, { chatId: message.poolId });
             await batchSendPushNotifications(unreadUsers, `MPool`, `[${message.sender.displayName}]: ${content}`, { chatId: message.poolId });
         } catch (error) {
             logError(error);

@@ -901,8 +901,7 @@ function EditProfile(props: EditProfileProps) {
           return {
             text: "Save",
             loadingText: "Saving...",
-            // loading: savingProfile,
-            loading: true,
+            loading: savingProfile,
             action: () => {
               handleSave();
             }

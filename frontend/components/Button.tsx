@@ -3,7 +3,8 @@ import {
     TouchableOpacity,
     Text,
     StyleProp,
-    Platform
+    Platform,
+    ViewStyle
 } from 'react-native';
 import { ThemeContext } from '../Context';
 import { ActivityIndicator } from 'react-native';
@@ -134,7 +135,7 @@ interface TextButtonProps {
     children: React.ReactText;
     color?: ColorTypes;
     onPress: () => void;
-    style?: StyleProp<any>;
+    style?: StyleProp<ViewStyle>;
 }
 export function TextButton(props: TextButtonProps) {
     const { children, onPress, color, style } = props;

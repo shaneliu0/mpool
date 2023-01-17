@@ -90,7 +90,7 @@ export async function onRequestMatchAttempt(requestId: number, curStrengthFloor:
             }
         });
         const ntitle = `We have a potential pool for ${req.season.name}`;
-        const nbody = `Match strength: ${Math.round(orderedMatches[0].strength * 10000) / 100}%. Decide if you want to join. Tap on the notification bell to view.`;
+        const nbody = `Match strength: ${Math.round(orderedMatches[0].strength * 10000) / 100}%. View it and decide if you want to join.`;
         console.log("Matched " + req.userId + " with " + orderedMatches[0].userId);
         pushAndEmailPersistent(
             req.userId,
@@ -199,6 +199,7 @@ async function getPotentialUserMatches(requestId: number, limit: number = 10, of
             AND "fromId" = ${poolReq.from.placeId}
             AND "departTime" BETWEEN ${leftLim} AND ${rightLim}
             AND "requestId" != ${requestId}
+            AND "seasonId" = ${poolReq.seasonId}
             ORDER BY dist
             LIMIT ${limit}
             OFFSET ${offset}
@@ -213,6 +214,7 @@ async function getPotentialUserMatches(requestId: number, limit: number = 10, of
             AND "toId" = ${poolReq.to.placeId}
             AND "departTime" BETWEEN ${leftLim} AND ${rightLim}
             AND "requestId" != ${requestId}
+            AND "seasonId" = ${poolReq.seasonId}
             ORDER BY dist
             LIMIT ${limit}
             OFFSET ${offset}

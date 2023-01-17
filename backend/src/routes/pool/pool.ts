@@ -34,9 +34,9 @@ router.use('/season', seasonRouter);
 router.use('/request', requestRouter);
 
 // search for a pool
-router.get('/search', async (req, res) => {
+// router.get('/search', async (req, res) => {
 
-});
+// });
 
 router.get('/potential/:matchId', async (req: any, res) => {
     const { user } = req;
@@ -58,6 +58,7 @@ router.get('/potential/:matchId', async (req: any, res) => {
                 }
             }
         });
+
         if (match.declined) {
             return res.json({
                 ...defaultPoolData,
@@ -91,7 +92,11 @@ router.get('/potential/:matchId', async (req: any, res) => {
             throw new Error("Couldn't locate match.")
         }
     } catch (error) {
-        resError(res, error);
+        console.log(error);
+        return res.json({
+            ...defaultPoolData,
+            error: "This match is no longer available.",
+        });
     }
 });
 
@@ -101,59 +106,64 @@ router.post('/potential/:matchId/accept', async (req, res) => {
 
     try {
         const mid = parseInt(matchId);
-        if (!(await checkCanAccessMatch(user.uid, mid))) {
-            return res.sendStatus(403);
-        }
-        const match = await prisma.potentialMatch.findFirstOrThrow({
-            where: { potentialMatchId: mid },
-            include: { users: true }
-        });
-        let describedPool;
-        if (match.users.length) {
-            const partnerId = match.users[0].userId === user.uid ? match.users[1].userId : match.users[0].userId;
-            describedPool = await getSimulatedPoolFromPartner(match.seasonId, user.uid, partnerId);
-        } else if (match.poolId) {
-            describedPool = await getMatchedPool(match.poolId, user.uid);
-        }
-        if (!describedPool) throw new Error("Couldn't locate match.");
-
-        const poolRequest = await prisma.poolRequest.findFirstOrThrow({
-            where: {
-                userId: user.uid,
-                seasonId: match.seasonId,
-            }
-        });
-
-        if (match.derivedPoolId) {
-            await prisma.pool.update({
-                where: { poolId: match.derivedPoolId },
-                data: {
-                    PoolRequest: {
-                        connect: { requestId: poolRequest.requestId }
-                    }
-                }
-            });
-            await MPoolBot.sendMemberJoinedMessage(match.derivedPoolId, user.uid);
-        } else {
-            const createdPool = await prisma.pool.create({
-                data: {
-                    season: { connect: { id: match.seasonId } },
-                    departTime: new Date(describedPool.departTime),
-                    from: { connect: { placeId: describedPool.from.id } },
-                    to: { connect: { placeId: describedPool.to.id } },
-                    DerivedFromMatch: { connect: { potentialMatchId: match.potentialMatchId } },
-                    PoolRequest: { connect: { requestId: poolRequest.requestId } }
-                }
-            });
-            await MPoolBot.sendPoolWelcomeMessage(createdPool.poolId);
-            await MPoolBot.sendMemberJoinedMessage(createdPool.poolId, user.uid);
-        }
+        await acceptMatchRequest(mid, user.uid);
 
         return res.sendStatus(200);
     } catch (error) {
         resError(res, error);
     }
 });
+
+export async function acceptMatchRequest(matchId: number, requesterId: string) {
+    const mid = Number(matchId);
+    if (!(await checkCanAccessMatch(requesterId, mid))) {
+        throw new Error("Unauthorized");
+    }
+    const match = await prisma.potentialMatch.findFirstOrThrow({
+        where: { potentialMatchId: mid },
+        include: { users: true }
+    });
+    let describedPool;
+    if (match.users.length) {
+        const partnerId = match.users[0].userId === requesterId ? match.users[1].userId : match.users[0].userId;
+        describedPool = await getSimulatedPoolFromPartner(match.seasonId, requesterId, partnerId);
+    } else if (match.poolId) {
+        describedPool = await getMatchedPool(match.poolId, requesterId);
+    }
+    if (!describedPool) throw new Error("Couldn't locate match.");
+
+    const poolRequest = await prisma.poolRequest.findFirstOrThrow({
+        where: {
+            userId: requesterId,
+            seasonId: match.seasonId,
+        }
+    });
+
+    if (match.derivedPoolId) {
+        await prisma.pool.update({
+            where: { poolId: match.derivedPoolId },
+            data: {
+                PoolRequest: {
+                    connect: { requestId: poolRequest.requestId }
+                }
+            }
+        });
+        await MPoolBot.sendMemberJoinedMessage(match.derivedPoolId, requesterId);
+    } else {
+        const createdPool = await prisma.pool.create({
+            data: {
+                season: { connect: { id: match.seasonId } },
+                departTime: new Date(describedPool.departTime),
+                from: { connect: { placeId: describedPool.from.id } },
+                to: { connect: { placeId: describedPool.to.id } },
+                DerivedFromMatch: { connect: { potentialMatchId: match.potentialMatchId } },
+                PoolRequest: { connect: { requestId: poolRequest.requestId } }
+            }
+        });
+        await MPoolBot.sendPoolWelcomeMessage(createdPool.poolId);
+        await MPoolBot.sendMemberJoinedMessage(createdPool.poolId, requesterId);
+    }
+}
 
 router.post('/potential/:matchId/decline', async (req, res) => {
     const { user } = req;
@@ -228,7 +238,7 @@ router.get('/potential/:matchId/pool', async (req, res) => {
     }
 });
 
-async function getMatchedPool(pid: number, requesterId: string): Promise<PoolData | null> {
+export async function getMatchedPool(pid: number, requesterId: string): Promise<PoolData | null> {
     const pool = await prisma.pool.findFirstOrThrow({
         where: { poolId: pid },
         include: {
@@ -255,7 +265,10 @@ async function getMatchedPool(pid: number, requesterId: string): Promise<PoolDat
     if (!pool.PoolRequest.length) return null;
     let statusMessage = "";
     statusMessage = "You joined a pool with " + (pool.PoolRequest.length - 1) + " other ";
-    if (pool.PoolRequest.length - 1 === 1) {
+    if (pool.PoolRequest.length - 1 === 0) {
+        statusMessage = "You're the first one in this pool.\n\nInvited users are shown below and they will receive messages you send in the chat."
+    }
+    else if (pool.PoolRequest.length - 1 === 1) {
         statusMessage += "person";
     }
     else {
@@ -439,7 +452,7 @@ router.get('/:poolId', async (req: any, res) => {
     }
 });
 
-router.get('/:poolId/status', async (req:any, res) => {
+router.get('/:poolId/status', async (req: any, res) => {
     const { user } = req;
     const { poolId } = req.params;
 
@@ -556,7 +569,7 @@ async function disableAndNotifyPool(poolId: number) {
             user: true,
         }
     });
-    console.log(remainingRequests);
+
     await Promise.all(remainingRequests.map(async ({ user, ...request }) => {
         await pushAndEmailPersistent(
             user.userId,

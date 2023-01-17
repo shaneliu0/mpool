@@ -150,7 +150,7 @@ function handleNotificationData(data: any) {
       })
     }, NAV_TIMEOUT);
   }
-}
+} // TFFFFTFFTT
 
 // async function schedulePushNotification() {
 //   await Notifications.scheduleNotificationAsync({

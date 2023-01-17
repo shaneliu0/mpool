@@ -53,26 +53,35 @@ async function places() {
     INSERT INTO "Place" ("placeId", "name", "coords", "universityId", "updatedAt", "category") VALUES
     ('mcnamara', 'McNamara Terminal (AirFrance/Delta)', ST_GeomFromText('POINT(-83.348700 42.225809)', 3857), 1, ${new Date()}, ${placeCatEnum["airport_terminal"]}),
     ('north', 'North Terminal (all other airlines)', ST_GeomFromText('POINT(-83.355737 42.208432)', 3857), 1, ${new Date()}, ${placeCatEnum["airport_terminal"]}),
-    ('alicelloyd', 'Alice Lloyd Hall', ST_GeomFromText('POINT(-83.743 42.278)', 3857), 1, ${new Date()}, ${placeCatEnum["dorm"]}),
-    ('baits', 'Baits II', ST_GeomFromText('POINT(-83.743 42.278)', 3857), 1, ${new Date()}, ${placeCatEnum["dorm"]}),
-    ('betsybarbour', 'Betsy Barbour House', ST_GeomFromText('POINT(-83.743 42.278)', 3857), 1, ${new Date()}, ${placeCatEnum["dorm"]}),
-    ('bursley', 'Bursley Hall', ST_GeomFromText('POINT(-83.743 42.278)', 3857), 1, ${new Date()}, ${placeCatEnum["dorm"]}),
-    ('couzens', 'Couzens Hall', ST_GeomFromText('POINT(-83.743 42.278)', 3857), 1, ${new Date()}, ${placeCatEnum["dorm"]}),
-    ('eastquad', 'East Quad', ST_GeomFromText('POINT(-83.743 42.278)', 3857), 1, ${new Date()}, ${placeCatEnum["dorm"]}),
-    ('fletcherhall', 'Fletcher Hall', ST_GeomFromText('POINT(-83.743 42.278)', 3857), 1, ${new Date()}, ${placeCatEnum["dorm"]}),
-    ('helennewberry', 'Helen Newberry Residence Hall', ST_GeomFromText('POINT(-83.743 42.278)', 3857), 1, ${new Date()}, ${placeCatEnum["dorm"]}),
-    ('hendersonhouse', 'Henderson House', ST_GeomFromText('POINT(-83.743 42.278)', 3857), 1, ${new Date()}, ${placeCatEnum["dorm"]}),
-    ('marthacook', 'Martha Cook Building', ST_GeomFromText('POINT(-83.743 42.278)', 3857), 1, ${new Date()}, ${placeCatEnum["dorm"]}),
-    ('markley', 'Markley Hall', ST_GeomFromText('POINT(-83.743 42.278)', 3857), 1, ${new Date()}, ${placeCatEnum["dorm"]}),
-    ('mojo', 'Mosher-Jordan', ST_GeomFromText('POINT(-83.743 42.278)', 3857), 1, ${new Date()}, ${placeCatEnum["dorm"]}),
-    ('oxford', 'Oxford Houses', ST_GeomFromText('POINT(-83.743 42.278)', 3857), 1, ${new Date()}, ${placeCatEnum["dorm"]}),
-    ('southquad', 'South Quad', ST_GeomFromText('POINT(-83.743 42.278)', 3857), 1, ${new Date()}, ${placeCatEnum["dorm"]}),
-    ('stockwell', 'Stockwell Hall', ST_GeomFromText('POINT(-83.743 42.278)', 3857), 1, ${new Date()}, ${placeCatEnum["dorm"]}),
-    ('westquad', 'West Quad', ST_GeomFromText('POINT(-83.743 42.278)', 3857), 1, ${new Date()}, ${placeCatEnum["dorm"]}),
-    ('universitytowersannarbor', 'University Towers', ST_GeomFromText('POINT(-83.743 42.278)', 3857), 1, ${new Date()}, ${placeCatEnum["apartment_complex"]}),
-    ('landmarkannarbor', 'Landmark', ST_GeomFromText('POINT(-83.743 42.278)', 3857), 1, ${new Date()}, ${placeCatEnum["apartment_complex"]}),
-    ('sagaannarbor', 'Saga/Younion', ST_GeomFromText('POINT(-83.743 42.278)', 3857), 1, ${new Date()}, ${placeCatEnum["apartment_complex"]}),
-    ('courtyards', 'Courtyards', ST_GeomFromText('POINT(-83.743 42.278)', 3857), 1, ${new Date()}, ${placeCatEnum["apartment_complex"]})
+    ('alicelloyd', 'Alice Lloyd Hall', ST_GeomFromText('POINT(-83.7318 42.281241)', 3857), 1, ${new Date()}, ${placeCatEnum["dorm"]}),
+    ('baits', 'Baits II', ST_GeomFromText('POINT(-83.724069 42.293758)', 3857), 1, ${new Date()}, ${placeCatEnum["dorm"]}),
+    ('betsybarbour', 'Betsy Barbour House', ST_GeomFromText('POINT(-83.741836 42.277324)', 3857), 1, ${new Date()}, ${placeCatEnum["dorm"]}),
+    ('bursley', 'Bursley Hall', ST_GeomFromText('POINT(-83.720951 42.293735)', 3857), 1, ${new Date()}, ${placeCatEnum["dorm"]}),
+    ('couzens', 'Couzens Hall', ST_GeomFromText('POINT(-83.732699 42.282036)', 3857), 1, ${new Date()}, ${placeCatEnum["dorm"]}),
+    ('eastquad', 'East Quad', ST_GeomFromText('POINT(-83.735488 42.272732)', 3857), 1, ${new Date()}, ${placeCatEnum["dorm"]}),
+    ('fletcherhall', 'Fletcher Hall', ST_GeomFromText('POINT(-83.742965 42.270175)', 3857), 1, ${new Date()}, ${placeCatEnum["dorm"]}),
+    ('helennewberry', 'Helen Newberry Residence Hall', ST_GeomFromText('POINT(-83.741674 42.276918)', 3857), 1, ${new Date()}, ${placeCatEnum["dorm"]}),
+    ('hendersonhouse', 'Henderson House', ST_GeomFromText('POINT(-83.73182 42.27183)', 3857), 1, ${new Date()}, ${placeCatEnum["dorm"]}),
+    ('marthacook', 'Martha Cook Building', ST_GeomFromText('POINT(-83.737963 42.2745)', 3857), 1, ${new Date()}, ${placeCatEnum["dorm"]}),
+    ('markley', 'Markley Hall', ST_GeomFromText('POINT(-83.728877 42.280884)', 3857), 1, ${new Date()}, ${placeCatEnum["dorm"]}),
+    ('mojo', 'Mosher-Jordan', ST_GeomFromText('POINT(-83.731395 42.280053)', 3857), 1, ${new Date()}, ${placeCatEnum["dorm"]}),
+    ('oxford', 'Oxford Houses', ST_GeomFromText('POINT(-83.725634 42.27438)', 3857), 1, ${new Date()}, ${placeCatEnum["dorm"]}),
+    ('southquad', 'South Quad', ST_GeomFromText('POINT(-83.741796 42.274028)', 3857), 1, ${new Date()}, ${placeCatEnum["dorm"]}),
+    ('stockwell', 'Stockwell Hall', ST_GeomFromText('POINT(-83.731316 42.278662)', 3857), 1, ${new Date()}, ${placeCatEnum["dorm"]}),
+    ('westquad', 'West Quad', ST_GeomFromText('POINT(-83.742564 42.274854)', 3857), 1, ${new Date()}, ${placeCatEnum["dorm"]}),
+    ('arborbluaa', 'Arbor Blu', ST_GeomFromText('POINT(-83.734816 42.273939)', 3857), 1, ${new Date()}, ${placeCatEnum["apartment_complex"]}),
+    ('foundryaa', 'Foundry Lofts', ST_GeomFromText('POINT(-83.743229 42.28154)', 3857), 1, ${new Date()}, ${placeCatEnum["apartment_complex"]}),
+    ('hubaa', 'Hub Ann Arbor', ST_GeomFromText('POINT(-83.741949 42.281366)', 3857), 1, ${new Date()}, ${placeCatEnum["apartment_complex"]}),
+    ('landmarkaa', 'Landmark', ST_GeomFromText('POINT(-83.732977 42.274569)', 3857), 1, ${new Date()}, ${placeCatEnum["apartment_complex"]}),
+    ('sagaaa', 'Saga Ann Arbor', ST_GeomFromText('POINT(-83.743568 42.280461)', 3857), 1, ${new Date()}, ${placeCatEnum["apartment_complex"]}),
+    ('six11aa', 'Six11', ST_GeomFromText('POINT(-83.735606 42.274571)', 3857), 1, ${new Date()}, ${placeCatEnum["apartment_complex"]}),
+    ('courtyardsaa', 'The Courtyards', ST_GeomFromText('POINT(-83.721222 42.295293)', 3857), 1, ${new Date()}, ${placeCatEnum["apartment_complex"]}),
+    ('thestandardaa', 'The Standard', ST_GeomFromText('POINT(-83.748139 42.277312)', 3857), 1, ${new Date()}, ${placeCatEnum["apartment_complex"]}),
+    ('utowersaa', 'University Towers', ST_GeomFromText('POINT(-83.73334 42.275241)', 3857), 1, ${new Date()}, ${placeCatEnum["apartment_complex"]}),
+    ('varsityaa', 'Varsity', ST_GeomFromText('POINT(-83.742965 42.280419)', 3857), 1, ${new Date()}, ${placeCatEnum["apartment_complex"]}),
+    ('vicvillageaa', 'Vic Village', ST_GeomFromText('POINT(-83.735494 42.275159)', 3857), 1, ${new Date()}, ${placeCatEnum["apartment_complex"]}),
+    ('zplaceaa', 'Z Place', ST_GeomFromText('POINT(-83.735598 42.274213)', 3857), 1, ${new Date()}, ${placeCatEnum["apartment_complex"]}),
+    ('zwestaa', 'Z West', ST_GeomFromText('POINT(-83.743057 42.277533)', 3857), 1, ${new Date()}, ${placeCatEnum["apartment_complex"]})
     ON CONFLICT DO NOTHING
    `;
 }
@@ -143,7 +152,7 @@ async function main() {
     // await seasons();
     // await prompt();
     // await sampleMatch();
-    await MPoolChatUser();
+    // await MPoolChatUser();
 }
 
 main()

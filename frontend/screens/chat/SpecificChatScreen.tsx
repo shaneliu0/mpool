@@ -24,7 +24,7 @@ import { PageSheetModal } from '../../components/Modal';
 import Text from '../../components/StyledText';
 import { AntDesign } from '@expo/vector-icons';
 import { PoolView } from '../pools/PoolScreen';
-import { markPoolAsRead } from '../../dataAccess/chats';
+import { getChatStatus, markPoolAsRead } from '../../dataAccess/chats';
 import { getPoolStatus, leavePool } from '../../dataAccess/poolData';
 import { MatchedPoolView } from '../pools/MatchedPoolScreen';
 import { blockUser, postReport } from '../../dataAccess/safety';
@@ -138,6 +138,23 @@ export default function Chats({ route, navigation }: RootTabScreenProps<'Chat'>)
     }
   }, [loading]);
 
+  useEffect(() => {
+    (async () => {
+      try {
+        const resp = await getChatStatus(chatId);
+        if (resp.text1) {
+          Toast.show({
+            ...resp,
+            visibilityTime: 10000, // 10 seconds
+            type: "info"
+          });
+        }
+      } catch (error) {
+        Logging.Error(error);
+      }
+    })();
+  }, []);
+
   const handleMessageSend = async (messages: IMessage[]) => {
     messages.forEach(m => m.pending = true);
     const previousMessages = chats.slice();
@@ -148,6 +165,21 @@ export default function Chats({ route, navigation }: RootTabScreenProps<'Chat'>)
           text: m.text
         });
       }))).map(r => r.data);
+      let infoMsg = undefined;
+      console.log(mResp);
+      for (let r of mResp) {
+        if (r.infoMsg) {
+          infoMsg = r.infoMsg;
+        }        
+      }
+
+      if (infoMsg) {
+        Toast.show({
+          text1: infoMsg,
+          type: 'info',
+        })
+      }
+
       mResp = mResp.filter(m => !previousMessages.find(p => p._id === m._id));
       mResp.forEach(m => m.pending = false);
       mResp.forEach(m => m.sent = true);

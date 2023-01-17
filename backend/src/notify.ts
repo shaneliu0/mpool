@@ -10,6 +10,39 @@ const expo = new Expo({ accessToken: process.env.EXPO_ACCESS_TOKEN });
 const tokenProcessingQueue: ExpoPushTicket[] = [];
 const ticketIdToPushToken = new Map<string, string>();
 
+// const reminderNotificationsCallBack = async () => {
+//     console.log('reminded users');
+//     const pendingPotentialMatches = await prisma.potentialMatch.findMany({
+//         where: {
+//             declined: false,
+//             OR: [
+//                 { derivedPoolId: null },
+//                 { derivedPool: { disabled: false } }
+//             ],
+//             pool: {
+//                 PoolRequest: {
+//                     some: {
+
+//                     }
+//                 }
+//             }
+//         },
+//         include: {
+//             derivedPool: {
+//                 include: {
+//                     PoolRequest: true,
+//                 }
+//             },
+//             users: true,
+//         }
+//     });
+//     console.dir(pendingPotentialMatches, { depth: null });
+
+//     // NOT FINISHED
+// }
+// reminderNotificationsCallBack();
+// setInterval(reminderNotificationsCallBack, ms('1d'));
+
 // async function processTokenQueue() {
 //     if (tokenProcessingQueue.length === 0) return;
 
