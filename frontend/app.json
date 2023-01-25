@@ -2,7 +2,7 @@
   "expo": {
     "name": "MPool",
     "slug": "mpool",
-    "version": "1.0.13",
+    "version": "1.0.14",
     "orientation": "portrait",
     "icon": "./assets/images/icongraphic.png",
     "scheme": "myapp",
@@ -27,10 +27,6 @@
     },
     "android": {
       "googleServicesFile": "./google-services.json",
-      "adaptiveIcon": {
-        "foregroundImage": "./assets/images/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
-      },
       "package": "com.katori.mpool",
       "config": {
         "googleMaps": {
@@ -39,7 +35,7 @@
       }
     },
     "web": {
-      "favicon": "./assets/images/favicon.png"
+      "favicon": "./assets/images/icongraphic.png"
     },
     "description": "",
     "extra": {

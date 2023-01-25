@@ -1,4 +1,4 @@
-import express from "express";
+import express, { request } from "express";
 import moment from "moment";
 import { removeTextInParenthesis } from "../../formatHelpers";
 import { resError } from "../../logging";
@@ -127,9 +127,27 @@ router.delete('/:requestId', async (req, res) => {
         if (!(await checkCanAccessRequest(user.uid, rid))) {
             return res.sendStatus(403);
         }
+        const request = await prisma.poolRequest.findFirstOrThrow({
+            where: { requestId: rid },
+        })
         await prisma.poolRequest.delete({
             where: { requestId: rid },
         });
+        
+        // decline all relevant potential matches
+        await prisma.potentialMatch.updateMany({
+            where: {
+                seasonId: request.seasonId,
+                users: {
+                    some: {
+                        userId: user.uid
+                    }
+                }
+            },
+            data: {
+                declined: true,
+            }
+        })
 
         return res.sendStatus(200);
     } catch (error) {
@@ -173,19 +191,31 @@ router.post('/:requestId/validate', async (req, res) => {
             }
         });
 
+        const season =  await prisma.poolSeason.findFirstOrThrow({
+            where: {
+                id: originalRequest.seasonId
+            }
+        });
+
         const newFromCategory = newFrom?.category || originalRequest.from.category;
         const newToCategory = newTo?.category || originalRequest.to.category;
         const newFromId = newFrom?.placeId || originalRequest.from.placeId;
         const newToId = newTo?.placeId || originalRequest.to.placeId;
 
-        if (newFromId === newToId) {
+        if (season.enforceFromAirport && newFromCategory !== placeCatEnum.airport_terminal) {
             return res.json({
-                errorMsg: "Couldn't save: Pickup and destination locations cannot be the same."
+                errorMsg: "Couldn't save: you must select an airport terminal as your starting location for this season."
             } as ValidateUpdatePoolRequestResp);
         }
-        if (![newFromCategory, newToCategory].includes(placeCatEnum.airport_terminal)) {
+        if (season.enforceToAirport && newToCategory !== placeCatEnum.airport_terminal) {
             return res.json({
-                errorMsg: "Couldn't save: Either pickup or destination location must be an airport terminal. Change the other location and it will save."
+                errorMsg: "Couldn't save: you must select an airport terminal as your destination for this season."
+            } as ValidateUpdatePoolRequestResp)
+        }
+
+        if (newFromId === newToId) {
+            return res.json({
+                errorMsg: "Couldn't save: pickup and destination locations cannot be the same."
             } as ValidateUpdatePoolRequestResp);
         }
         return res.json({} as ValidateUpdatePoolRequestResp);

@@ -211,7 +211,7 @@ export function ProfileDisplay(props: Profile & ProfileDisplayProps) {
                     flex: 1,
                     height: 100,
                 }}>
-                    <Text variant="h1">{name}</Text>
+                    <Text variant="h1" style={{ lineHeight: 40 }}>{name}</Text>
                     <Text variant="body">{description || "No description."}</Text>
                 </View>
             </View>

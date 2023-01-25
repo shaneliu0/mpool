@@ -271,6 +271,29 @@ export function DateTimeSelector(props: DateTimeSelectorProps) {
         onSelect(event, selectedDate);
     }
 
+    let tipComponent = (
+        <>
+            <Text style={{ fontWeight: "300", marginLeft: 15 }}>This time is in your local device timezone.</Text>
+            <Text style={{ fontWeight: "300", marginLeft: 15 }}></Text>
+            <Text style={{ fontWeight: "300", marginLeft: 15 }}>You will see the time in EST on the</Text>
+            <Text style={{ fontWeight: "300", marginLeft: 15 }}>home screen after you create the request.</Text>
+        </>
+    )
+
+    if (new Date().getTimezoneOffset() !== 300) {
+        tipComponent = (
+            <>
+                <Text style={{ fontWeight: "300", marginLeft: 15 }}>This time is in your local device timezone.</Text>
+                <Text style={{ fontWeight: "300", marginLeft: 15 }}></Text>
+                <Text style={{ fontWeight: "300", marginLeft: 15 }}>Warning: Your device timezone is NOT</Text>
+                <Text style={{ fontWeight: "300", marginLeft: 15 }}>set to UMich's Eastern Time.</Text>
+                <Text style={{ fontWeight: "300", marginLeft: 15 }}></Text>
+                <Text style={{ fontWeight: "300", marginLeft: 15 }}>You will see the time in EST on the</Text>
+                <Text style={{ fontWeight: "300", marginLeft: 15 }}>home screen after you create the request.</Text>
+            </>
+        )
+    }
+
     if (Platform.OS === 'ios') {
         return (
             <View>
@@ -296,7 +319,7 @@ export function DateTimeSelector(props: DateTimeSelectorProps) {
                         minuteInterval={minuteInterval}
                     />
                 </HStack>
-                <Text style={{ fontWeight: "300", marginLeft: 15 }}>This time is in your local device timezone.</Text>
+                {tipComponent}
             </View>
         )
     } else if (Platform.OS === "android") {
@@ -358,7 +381,7 @@ export function DateTimeSelector(props: DateTimeSelectorProps) {
                         />
                     )}
                 </HStack>
-                <Text style={{ fontWeight: "300", marginLeft: 15 }}>This time is in your local device timezone.</Text>
+                {tipComponent}
             </View>
         )
     } else {

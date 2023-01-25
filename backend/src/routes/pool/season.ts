@@ -31,7 +31,8 @@ router.get('/', async (req:any, res) => {
                         to: true,
                     }
                 },
-            }
+            },
+            orderBy: { endsAt: 'asc' }
         });
 
         return res.json(activePools.map(p => {
@@ -161,22 +162,40 @@ router.post('/:seasonId/validate', async (req, res) => {
     try {
         const sid = parseInt(seasonId);
 
-        const airport_terminal = placeCatEnum.airport_terminal;
-
-        const val = await prisma.place.findFirst({
-            where:{
-                placeId: {
-                    in: [fromId, toId],
-                },
-                category: airport_terminal,
+        const season = await prisma.poolSeason.findFirst({
+            where: {
+                id: sid,
             }
         });
 
-        if (!val) {
-            return res.json({
-                errorMsg: "Either pickup or destination location must be an airport terminal."
-            } as ValidatePoolRequestResp)
+        if (!season) return res.sendStatus(404);
+
+        const airport_terminal = placeCatEnum.airport_terminal;
+
+        if (season?.enforceFromAirport) {
+            const from = await prisma.place.findFirst({
+                where: {
+                    placeId: fromId,
+                    category: airport_terminal,
+                }
+            });
+
+            if (!from) return res.json({ errorMsg: "You must select an airport terminal as your starting location for this season." } as ValidatePoolRequestResp);
         }
+
+        if (season?.enforceToAirport) {
+            const to = await prisma.place.findFirst({
+                where: {
+                    placeId: toId,
+                    category: airport_terminal,
+                }
+            });
+
+            if (!to) return res.json({ errorMsg: "You must select an airport terminal as your destination for this season." } as ValidatePoolRequestResp);
+        }
+
+        if (fromId === toId) return res.json({ errorMsg: "You cannot select the same location for both your starting and destination." } as ValidatePoolRequestResp);
+
         return res.json({} as ValidatePoolRequestResp);
     } catch (error) {
         resError(res, error);

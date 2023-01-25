@@ -39,6 +39,14 @@ LogBox.ignoreAllLogs();
 
 const selectColorMode = (scheme: 'light' | 'dark') => (light: string, dark: string) => scheme === 'light' ? light : dark;
 
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowAlert: true,
+    shouldPlaySound: true,
+    shouldSetBadge: true,
+  }),
+});
+
 function App() {
   const user = useSelector((state: any) => state.auth.user);
   const [expoPushToken, setExpoPushToken] = useState<string | undefined>('');
@@ -192,7 +200,7 @@ async function registerForPushNotificationsAsync(userId: string) {
     registerNotifications({
       expoPushToken: token,
     })
-    console.log(token);
+    // console.log(token);
   } else {
     console.log('Must use physical device for Push Notifications');
   }

@@ -166,7 +166,6 @@ export default function Chats({ route, navigation }: RootTabScreenProps<'Chat'>)
         });
       }))).map(r => r.data);
       let infoMsg = undefined;
-      console.log(mResp);
       for (let r of mResp) {
         if (r.infoMsg) {
           infoMsg = r.infoMsg;

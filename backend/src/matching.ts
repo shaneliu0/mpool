@@ -55,7 +55,7 @@ export async function refreshAndPotentiallyMatchAll() {
         });
         unfulfilledRequests.push(...moreReqs);
     }
-    
+    console.log(unfulfilledRequests);
     for (const req of unfulfilledRequests) {
         let strengthFloor = 0.5;
         const daysFromDepart = (req.departTime.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24);
@@ -177,8 +177,8 @@ async function getPotentialUserMatches(requestId: number, limit: number = 10, of
 
         // has to be the utc time zone offset ahead! 5 hours ahead for eastern time.
         // z at time zone means utc. computer converts minus 5 hours back to eastern time.
-        const correctDate = getCorrectDate(poolReq.departTime);
-        // const correctDate = poolReq.departTime;
+        // const correctDate = getCorrectDate(poolReq.departTime);
+        const correctDate = poolReq.departTime;
 
         const leftLim = new Date(correctDate);
         leftLim.setHours(leftLim.getHours() - hourOffset);

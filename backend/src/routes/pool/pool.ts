@@ -93,6 +93,12 @@ router.get('/potential/:matchId', async (req: any, res) => {
         }
     } catch (error) {
         console.log(error);
+        const mid = parseInt(matchId);
+        if (mid) {
+            await prisma.potentialMatch.delete({
+                where: { potentialMatchId: mid }
+            });
+        }
         return res.json({
             ...defaultPoolData,
             error: "This match is no longer available.",

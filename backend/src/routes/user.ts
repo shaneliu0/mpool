@@ -6,6 +6,7 @@ import { checkSharedPool } from '../permissions/poolPerms';
 import { checkUserAllowed } from '../permissions/userPerms';
 import { getUserBlockedMessage } from '../permissions/safetyPerms';
 import { MPOOL_USERID } from './pool/mPoolBot';
+import { newLineNameIfNeeded } from '../formatHelpers';
 
 const auth = admin.auth();
 
@@ -223,7 +224,16 @@ router.delete('/', async (req, res) => {
     const { user } = req;
 
     try {
-        await auth.deleteUser(user.uid)
+        await prisma.user.update({
+            where: {
+                userId: user.uid,
+            },
+            data: {
+                deleted: true,
+            }
+        });
+
+        await auth.deleteUser(user.uid);
 
         return res.sendStatus(200);
     } catch (error) {
@@ -251,7 +261,7 @@ async function getProfile(requesterId: string, requestedId?: string): Promise<Pr
     const firebaseUser = await auth.getUser(targetId);
     const sharedPool = targetId === requesterId ? true : await checkSharedPool(requesterId, targetId);
     // if shared pool then display full name. otherwise, only display first name.
-    const name = sharedPool ? firebaseUser.displayName : firebaseUser.displayName?.split(' ')[0];
+    const name = newLineNameIfNeeded(sharedPool ? firebaseUser.displayName : firebaseUser.displayName?.split(' ')[0]);
     return {
         photoUrl: user.photoUrl ?? firebaseUser.photoURL ?? "",
         name: name ?? "",

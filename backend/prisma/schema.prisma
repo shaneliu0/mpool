@@ -12,9 +12,10 @@ datasource db {
 
 model User {
   userId             String               @id
-  email              String               
+  email              String
   displayName        String
   photoUrl           String
+  deleted            Boolean              @default(false)
   requests           PoolRequest[]
   Message            Message[]
   Notification       Notification[]
@@ -98,9 +99,9 @@ model Pool {
   toId             String?
   disabled         Boolean          @default(false)
   message          Message[]
-  PoolRequest      PoolRequest[]    // these pool request users have accepted and are in the pool
-  PotentialMatch   PotentialMatch[] @relation("matched")    // these are matches that have been made directly to the pool
-  DerivedFromMatch PotentialMatch[] @relation("derived")    // these the match which the pool has been created from.
+  PoolRequest      PoolRequest[] // these pool request users have accepted and are in the pool
+  PotentialMatch   PotentialMatch[] @relation("matched") // these are matches that have been made directly to the pool
+  DerivedFromMatch PotentialMatch[] @relation("derived") // these the match which the pool has been created from.
   UnreadMessage    UnreadMessage[]
 }
 
@@ -140,12 +141,12 @@ model Reports {
 }
 
 model BlockedUser {
-  blockId Int      @id @default(autoincrement())
-  createdAt     DateTime @default(now())
-  blockedBy     User     @relation(name: "blockedby", fields: [blockedById], references: [userId])
-  blockedById   String
-  user          User     @relation(name: "blockeduser", fields: [userId], references: [userId])
-  userId        String
+  blockId     Int      @id @default(autoincrement())
+  createdAt   DateTime @default(now())
+  blockedBy   User     @relation(name: "blockedby", fields: [blockedById], references: [userId])
+  blockedById String
+  user        User     @relation(name: "blockeduser", fields: [userId], references: [userId])
+  userId      String
 }
 
 model UnreadMessage {
@@ -174,14 +175,16 @@ model Place {
 }
 
 model PoolSeason {
-  id           Int           @id @default(autoincrement())
-  name         String        @db.VarChar(255)
-  endsAt       DateTime
-  PoolRequest  PoolRequest[]
-  active       Boolean
-  university   University    @relation(fields: [universityId], references: [universityId])
-  universityId Int
-  Pool         Pool[]
+  id                 Int           @id @default(autoincrement())
+  name               String        @db.VarChar(255)
+  endsAt             DateTime
+  enforceFromAirport Boolean       @default(false)
+  enforceToAirport   Boolean       @default(false)
+  PoolRequest        PoolRequest[]
+  active             Boolean
+  university         University    @relation(fields: [universityId], references: [universityId])
+  universityId       Int
+  Pool               Pool[]
 }
 
 model PoolRequest {

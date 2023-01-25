@@ -31,3 +31,12 @@ export function roundCoordinatesTo3Decimals(coords: { latitude: number, longitud
         longitude: Math.round(coords.longitude * 1000) / 1000,
     }
 }
+
+export function newLineNameIfNeeded(name: string | undefined) {
+    if (!name) return "";
+    if (name.length > 10) {
+        return name.slice(0, 10) + '...';
+    }
+
+    return name;
+}

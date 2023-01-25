@@ -25,21 +25,16 @@ async function seasons() {
         data: [
             {
                 id: 1,
-                name: "Thanksgiving Break 2022",
+                name: "Spring Break to DTW",
                 active: true,
-                endsAt: new Date(2022, 11, 25),
+                enforceToAirport: true,
+                endsAt: new Date(2023, 3, 13),
                 universityId: 1,
             },
             {
                 id: 2,
-                name: "Winter Break 2022",
-                active: true,
-                endsAt: new Date(2023, 1, 7),
-                universityId: 1,
-            },
-            {
-                id: 3,
-                name: "Spring Break 2023",
+                name: "Spring Break to Ann Arbor",
+                enforceFromAirport: true,
                 active: true,
                 endsAt: new Date(2023, 3, 14),
                 universityId: 1,
@@ -65,6 +60,7 @@ async function places() {
     ('marthacook', 'Martha Cook Building', ST_GeomFromText('POINT(-83.737963 42.2745)', 3857), 1, ${new Date()}, ${placeCatEnum["dorm"]}),
     ('markley', 'Markley Hall', ST_GeomFromText('POINT(-83.728877 42.280884)', 3857), 1, ${new Date()}, ${placeCatEnum["dorm"]}),
     ('mojo', 'Mosher-Jordan', ST_GeomFromText('POINT(-83.731395 42.280053)', 3857), 1, ${new Date()}, ${placeCatEnum["dorm"]}),
+    ('northquad', 'North Quad', ST_GeomFromText('POINT(-83.740170 42.280488)', 3857), 1, ${new Date()}, ${placeCatEnum["dorm"]}),
     ('oxford', 'Oxford Houses', ST_GeomFromText('POINT(-83.725634 42.27438)', 3857), 1, ${new Date()}, ${placeCatEnum["dorm"]}),
     ('southquad', 'South Quad', ST_GeomFromText('POINT(-83.741796 42.274028)', 3857), 1, ${new Date()}, ${placeCatEnum["dorm"]}),
     ('stockwell', 'Stockwell Hall', ST_GeomFromText('POINT(-83.731316 42.278662)', 3857), 1, ${new Date()}, ${placeCatEnum["dorm"]}),
@@ -151,8 +147,9 @@ async function main() {
     // await connectUniversityDefaultPlaces();
     // await seasons();
     // await prompt();
-    // await sampleMatch();
     // await MPoolChatUser();
+
+    // await sampleMatch();
 }
 
 main()
