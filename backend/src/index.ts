@@ -24,6 +24,7 @@ import userRouter from './routes/user';
 import notificationsRouter from './routes/notifications';
 import staticRouter from './routes/static';
 import safetyRouter from './routes/safety';
+import functionsRouter from './routes/firebasefunctions';
 
 import './matching';
 
@@ -31,11 +32,11 @@ const app = express();
 
 const waitForThreeSeconds = () => {
     return new Promise<void>((resolve, reject) => {
-      setTimeout(() => {
-        resolve();
-      }, 3000);
+        setTimeout(() => {
+            resolve();
+        }, 3000);
     });
-  };
+};
 
 async function decodeUserToken(req: any, res: any, next: any) {
     if (!req.headers.authorization) return next();
@@ -45,6 +46,7 @@ async function decodeUserToken(req: any, res: any, next: any) {
             .auth()
             .verifyIdToken(token);
         req.user.userId = null;
+        if (!req.user.email_verified) return res.sendStatus(403);
         next();
     } catch (e) {
         return res.status(403).json({ error: "Error Authenticating!" })
@@ -61,6 +63,8 @@ app.use('/user', userRouter);
 app.use('/notifications', notificationsRouter);
 app.use('/static', staticRouter);
 app.use('/safety', safetyRouter);
+app.use('/functions', functionsRouter);
+
 
 const port = process.env.PORT || 3001;
 app.listen(port, () => {

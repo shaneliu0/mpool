@@ -20,6 +20,7 @@ router.get('/', async (req:any, res) => {
         const activePools = await prisma.poolSeason.findMany({
             where: {
                 active: true,
+                universityId: user.universityId,
             },
             include: {
                 PoolRequest: {
@@ -31,6 +32,7 @@ router.get('/', async (req:any, res) => {
                         to: true,
                     }
                 },
+                university: true,
             },
             orderBy: { endsAt: 'asc' }
         });
@@ -40,20 +42,20 @@ router.get('/', async (req:any, res) => {
             let expandedBodyText = "";
             let poolId;
             let requestId;
-
+            
             if (p.PoolRequest.length) {
                 const poolReq = p.PoolRequest[0];
-                
+                poolReq.departTime.setHours(poolReq.departTime.getHours() + p.university.timeZoneOffsetFromEST)
                 const departDate = moment(poolReq.departTime).format("MMM Do");
 
                 if (poolReq.poolId) {
                     poolId = poolReq.poolId;
                     collapsedBodyText = `Your request for ${departDate} has been fulfilled...`;
-                    expandedBodyText = `Fulfilled request to arrive at ${removeTextInParenthesis(poolReq.to.name)} on ${departDate} at ${moment(poolReq.departTime).format("h:mm a")} EST.`;
+                    expandedBodyText = `Fulfilled request to arrive at ${removeTextInParenthesis(poolReq.to.name)} on ${departDate} at ${moment(poolReq.departTime).format("h:mm a")} ${p.university.shortTimeZoneName}.`;
                 } else {
                     requestId = poolReq.requestId;
                     collapsedBodyText = `You have an outgoing request for ${departDate}...`;
-                    expandedBodyText = `Outgoing request to arrive at ${removeTextInParenthesis(poolReq.to.name)} on ${departDate} at ${moment(poolReq.departTime).format("h:mm a")} EST.`;
+                    expandedBodyText = `Outgoing request to arrive at ${removeTextInParenthesis(poolReq.to.name)} on ${departDate} at ${moment(poolReq.departTime).format("h:mm a")} ${p.university.shortTimeZoneName}.`;
                 }
             } else {
                 collapsedBodyText = `You haven't created a request for this yet...`;
@@ -108,6 +110,9 @@ router.get('/:seasonId', async (req, res) => {
             displayTitle: sdata.name,
             destinations: dests,
             infoAlert: info,
+            enforceFromAirport: sdata.enforceFromAirport,
+            enforceToAirport: sdata.enforceToAirport,
+            defaultTime: sdata.defaultTime.getTime(),
         } as PoolSeasonDetails)
     } catch (e) {
         console.error(e);
@@ -133,19 +138,19 @@ router.post('/:seasonId', async (req, res) => {
         });
         if (checkDup) return res.status(403).json({ error: "Duplicate request!" });
 
-        await updatePlace(fromId);
-        await updatePlace(toId);
-        
+        const valFrom = await updatePlace(fromId);
+        const valTo = await updatePlace(toId);
+
         const newRequest = await prisma.poolRequest.create({
             data: {
                 departTime: new Date(departDate),
                 season: { connect: { id: sid } },
                 user: { connect: { userId: user.uid }},
-                from: { connect: { placeId: fromId }},
-                to: { connect: { placeId: toId }},
+                from: { connect: { placeId: valFrom || fromId }},
+                to: { connect: { placeId: valTo || toId }},
             }
         });
-        onRequestMatchAttempt(newRequest.requestId);
+        await onRequestMatchAttempt(newRequest.requestId);
         return res.json({
             requestId: newRequest.requestId
         } as SubmitPoolRequestResp);

@@ -1,12 +1,12 @@
 import express from 'express';
 import { resError } from '../logging';
-import { CheckedInResp, defaultProfile, Profile, ProfileContentBlock, ProfileContentPrompt } from '../types/dataAccess/users';
+import { CheckedInResp, defaultProfile, Profile, ProfileContentBlock, ProfileContentPrompt, UniversityDataResp } from '../types/dataAccess/users';
 import admin from 'firebase-admin';
 import { checkSharedPool } from '../permissions/poolPerms';
 import { checkUserAllowed } from '../permissions/userPerms';
 import { getUserBlockedMessage } from '../permissions/safetyPerms';
 import { MPOOL_USERID } from './pool/mPoolBot';
-import { newLineNameIfNeeded } from '../formatHelpers';
+import { newLineNameIfNeeded, secureGetEmailDomain } from '../formatHelpers';
 
 const auth = admin.auth();
 
@@ -28,7 +28,7 @@ router.get('/updatevalidate', async (req, res) => {
         // const picture = `https://source.boringavatars.com/marble/256/${uid}`; // this is an svg
         const potentialProfileId = await prisma.profile.findFirst({
             where: {
-                User: { some: { userId: user.uid }}
+                User: { some: { userId: user.uid } }
             }
         });
         await prisma.user.upsert({
@@ -50,8 +50,6 @@ router.get('/updatevalidate', async (req, res) => {
                 }
             },
             update: {
-                displayName: name || "",
-                email: email || "",
                 photoUrl: picture || "",
                 userId: uid,
                 Profile: {
@@ -84,7 +82,7 @@ router.get('/:userId/profile', async (req, res) => {
                 errorMsg: "This bot does not have a profile."
             } as Profile);
         }
-        const blockMsg = await getUserBlockedMessage(user.uid, userId);        
+        const blockMsg = await getUserBlockedMessage(user.uid, userId);
         if (blockMsg) {
             return res.json({
                 ...defaultProfile,
@@ -109,7 +107,7 @@ router.get('/profile', async (req, res) => {
     }
 });
 
-router.post('/profile', async (req:any, res) => {
+router.post('/profile', async (req: any, res) => {
     const { user } = req;
     const profile: Profile = req.body;
 
@@ -183,15 +181,20 @@ router.get('/profile/edit/prompts', async (req, res) => {
     }
 });
 
+const TOS_URL = "https://www.katoritech.com/mpool/legal/end-user-license-agreement";
 router.get('/checkedin', async (req, res) => {
     const { user } = req;
 
     try {
         const valid = await checkUserAllowed(user.uid);
         if (!valid) {
+            const valUniversities = await prisma.university.findMany();
+            const domains = valUniversities.map(u => u.emailDomain).join(", ");
             return res.json({
                 checkedIn: true,
-                errorSignOutMsg: "You need to sign in with a umich.edu Google account to access this app."
+                tosUrl: TOS_URL,
+                welcomeData: [],
+                errorSignOutMsg: `You need to sign in with a Google account from the following to access this app: ${domains}`
             } as CheckedInResp);
         }
 
@@ -202,21 +205,85 @@ router.get('/checkedin', async (req, res) => {
         });
         // if found, then the user has checked in already.
         if (!checkedIn) {
-            await prisma.checkedIn.create({
-                data: {
-                    userId: user.uid,
-                }
-            })
+            await prisma.checkedIn.upsert({
+                where: { userId: user.uid },
+                create: { userId: user.uid },
+                update: { userId: user.uid },
+            });
             return res.json({
-                checkedIn: false
+                checkedIn: false,
+                tosUrl: TOS_URL,
+                welcomeData: [
+                    {
+                        heading: "Pools",
+                        content: [
+                            "You can create a pool request in a season.",
+                            "After a request is created, we will attempt to find a match for you.",
+                            "We try to match you with other people traveling in the same direction to the same airport terminal who are leaving at the closest time and location to you.",
+                            "As we get closer to your departure date, we loosen up the matching criteria so it's more likely that you find a match.",
+                            "We'll send a notification when we find a match.",
+                            "When a match is found, you will see the location and time that is closest to everyone. You can accept the match or decline and wait for a new match.",
+                            "You can view your match by tapping the notification bell.",
+                            "When you join a pool, your name is shared with your pool members.",
+                        ]
+                    },
+                    {
+                        heading: "Profiles",
+                        content: [
+                            "Create your profile in the account screen.",
+                            "You can add a description to your profile",
+                            "You can also add content to your profile, such as your interests and what you're studying.",
+                        ]
+                    }
+                ],
             } as CheckedInResp);
         } else {
             return res.json({
-                checkedIn: true
+                checkedIn: true,
+                tosUrl: TOS_URL,
+                welcomeData: [
+                    {
+                        heading: "Pools",
+                        content: [
+                            "You can create a pool request in a season.",
+                            "After a request is created, we will attempt to find a match for you.",
+                            "We try to match you with other people traveling in the same direction to the same airport terminal who are leaving at the closest time and location to you.",
+                            "As we get closer to your departure date, we loosen up the matching criteria so it's more likely that you find a match.",
+                            "We'll send a notification when we find a match.",
+                            "When a match is found, you will see the location and time that is closest to everyone. You can accept the match or decline and wait for a new match.",
+                            "You can view your match by tapping the notification bell.",
+                            "When you join a pool, your name is shared with your pool members.",
+                        ]
+                    },
+                    {
+                        heading: "Profiles",
+                        content: [
+                            "Create your profile in the account screen.",
+                            "You can add a description to your profile",
+                            "You can also add content to your profile, such as your interests and what you're studying.",
+                        ]
+                    }
+                ],
             } as CheckedInResp);
         }
     } catch (error) {
         resError(res, error);
+    }
+});
+
+router.post('/accepttos', async (req, res) => {
+    const { user } = req;
+
+    try {
+        await prisma.checkedIn.upsert({
+            where: { userId: user.uid },
+            create: { userId: user.uid },
+            update: { userId: user.uid },
+        });
+
+        return res.sendStatus(200);
+    } catch (error) {
+        return resError(res, error);
     }
 });
 
@@ -241,6 +308,36 @@ router.delete('/', async (req, res) => {
     }
 });
 
+router.get('/university', async (req, res) => {
+    const { user } = req;
+
+    try {
+        if (!user.uid) return res.sendStatus(403);
+        const vuser = await prisma.user.findUniqueOrThrow({
+            where: {
+                userId: user.uid,
+            }
+        });
+
+        const userEmailEnding = secureGetEmailDomain(vuser.email);
+
+        const university = await prisma.university.findFirst({
+            where: {
+                emailDomain: userEmailEnding,
+            }
+        });
+
+        if (!university) return res.json({} as UniversityDataResp);
+
+        return res.json({
+            universityName: university.name,
+            universityColors: university.colorsObject,
+        } as UniversityDataResp)
+    } catch (error) {
+        resError(res, error);
+    }
+});
+
 async function getProfile(requesterId: string, requestedId?: string): Promise<Profile> {
     const targetId = requestedId || requesterId;
     const user = await prisma.user.findFirstOrThrow({
@@ -258,12 +355,11 @@ async function getProfile(requesterId: string, requestedId?: string): Promise<Pr
             }
         }
     });
-    const firebaseUser = await auth.getUser(targetId);
     const sharedPool = targetId === requesterId ? true : await checkSharedPool(requesterId, targetId);
     // if shared pool then display full name. otherwise, only display first name.
-    const name = newLineNameIfNeeded(sharedPool ? firebaseUser.displayName : firebaseUser.displayName?.split(' ')[0]);
+    const name = newLineNameIfNeeded(sharedPool ? user.displayName : user.displayName?.split(' ')[0]);
     return {
-        photoUrl: user.photoUrl ?? firebaseUser.photoURL ?? "",
+        photoUrl: user.photoUrl ?? "",
         name: name ?? "",
         description: user.Profile.description,
         content: user.Profile.content.map(c => {

@@ -11,13 +11,36 @@ export const placeCatEnum = {
 const prisma = new PrismaClient();
 
 async function universities() {
-    await prisma.university.create({
-        data: {
-            name: "University of Michigan--Ann Arbor",
-            universityId: 1,
-            emailDomain: "umich.edu",
-        }
-    })
+    try {
+        await prisma.university.create({
+            data: {
+                name: "University of Michigan--Ann Arbor",
+                universityId: 1,
+                emailDomain: "umich.edu",
+                colorsObject: {
+                    primary: "#FFCB05",
+                    secondary: "#00274C",
+                }
+            }
+        });
+    } catch (error) {
+        
+    }
+    try {
+        await prisma.university.create({
+            data: {
+                name: "University of California--Berkeley",
+                universityId: 2,
+                emailDomain: "berkeley.edu",
+                colorsObject: {
+                    primary: "#FDB515",
+                    secondary: "#003262",
+                }
+            }
+        });
+    } catch (error) {
+
+    }
 }
 
 async function seasons() {
@@ -28,6 +51,7 @@ async function seasons() {
                 name: "Spring Break to DTW",
                 active: true,
                 enforceToAirport: true,
+                defaultTime: new Date(2023, 2, 25),
                 endsAt: new Date(2023, 3, 13),
                 universityId: 1,
             },
@@ -36,14 +60,34 @@ async function seasons() {
                 name: "Spring Break to Ann Arbor",
                 enforceFromAirport: true,
                 active: true,
+                defaultTime: new Date(2023, 3, 6),
                 endsAt: new Date(2023, 3, 14),
                 universityId: 1,
+            },
+            {
+                id: 3,
+                name: "Spring Break from Berkeley",
+                enforceToAirport: true,
+                active: true,
+                defaultTime: new Date(2023, 3, 25),
+                endsAt: new Date(2023, 4, 14),
+                universityId: 2,
+            },
+            {
+                id: 4,
+                name: "Spring Break to Berkeley",
+                enforceFromAirport: true,
+                active: true,
+                defaultTime: new Date(2023, 4, 1),
+                endsAt: new Date(2023, 4, 14),
+                universityId: 2,
             },
         ]
     })
 }
 // allicelloyd, baits II, betsy barbour, bursley, couzens, east quadrangle, fletcher hall, helennewberry, henderson house, martha cook, markley, mojo, northquad, oxford, southquad, stockwell, westquad
 async function places() {
+    // START UMICH
     await prisma.$executeRaw`
     INSERT INTO "Place" ("placeId", "name", "coords", "universityId", "updatedAt", "category") VALUES
     ('mcnamara', 'McNamara Terminal (AirFrance/Delta)', ST_GeomFromText('POINT(-83.348700 42.225809)', 3857), 1, ${new Date()}, ${placeCatEnum["airport_terminal"]}),
@@ -80,6 +124,28 @@ async function places() {
     ('zwestaa', 'Z West', ST_GeomFromText('POINT(-83.743057 42.277533)', 3857), 1, ${new Date()}, ${placeCatEnum["apartment_complex"]})
     ON CONFLICT DO NOTHING
    `;
+
+   // START BERKELEY
+   await prisma.$executeRaw`
+   INSERT INTO "Place" ("placeId", "name", "coords", "universityId", "updatedAt", "category") VALUES
+   ('oakterminal1', 'OAK Terminal 1', ST_GeomFromText('POINT(-122.212382 37.711587)', 3857), 2, ${new Date()}, ${placeCatEnum["airport_terminal"]}),
+   ('oakterminal2', 'OAK Terminal 2', ST_GeomFromText('POINT(-122.211611 37.711509)', 3857), 2, ${new Date()}, ${placeCatEnum["airport_terminal"]}),
+   ('sfoterminal1', 'SFO Terminal 1', ST_GeomFromText('POINT(-122.385371 37.61452)', 3857), 2, ${new Date()}, ${placeCatEnum["airport_terminal"]}),
+   ('sfoterminal2', 'SFO Terminal 2', ST_GeomFromText('POINT(-122.382285 37.617293)', 3857), 2, ${new Date()}, ${placeCatEnum["airport_terminal"]}),
+   ('sfoterminal3', 'SFO Terminal 3', ST_GeomFromText('POINT(-122.384493 37.618753)', 3857), 2, ${new Date()}, ${placeCatEnum["airport_terminal"]}),
+   ('sfointernational', 'SFO International', ST_GeomFromText('POINT(-122.378977 37.621295)', 3857), 2, ${new Date()}, ${placeCatEnum["airport_terminal"]}),
+   ('berkeleyunit1', 'Residence Halls Unit 1', ST_GeomFromText('POINT(-122.255206 37.86778)', 3857), 2, ${new Date()}, ${placeCatEnum["dorm"]}),
+   ('berkeleyunit2', 'Residence Halls Unit 2', ST_GeomFromText('POINT(-122.254815 37.866156)', 3857), 2, ${new Date()}, ${placeCatEnum["dorm"]}),
+   ('berkeleyunit3', 'Residence Halls Unit 3', ST_GeomFromText('POINT(-122.260387 37.867261)', 3857), 2, ${new Date()}, ${placeCatEnum["dorm"]}),
+   ('berkeleyclarkkerr', 'Clark Kerr', ST_GeomFromText('POINT(-122.250231 37.864047)', 3857), 2, ${new Date()}, ${placeCatEnum["dorm"]}),
+   ('berkeleyfoothill', 'Foothill', ST_GeomFromText('POINT(-122.254974 37.875338)', 3857), 2, ${new Date()}, ${placeCatEnum["dorm"]}),
+   ('berkeleyblackwell', 'Blackwell', ST_GeomFromText('POINT(-122.261238 37.867669)', 3857), 2, ${new Date()}, ${placeCatEnum["dorm"]}),
+   ('berkeleymartinez', 'Maximino Martinez', ST_GeomFromText('POINT(-122.25761 37.866973)', 3857), 2, ${new Date()}, ${placeCatEnum["apartment_complex"]}),
+   ('berkeleytheden', 'The Den', ST_GeomFromText('POINT(-122.258251 37.866731)', 3857), 2, ${new Date()}, ${placeCatEnum["apartment_complex"]}),
+   ('berkeleyvarsity', 'Varsity', ST_GeomFromText('POINT(-122.268992 37.866155)', 3857), 2, ${new Date()}, ${placeCatEnum["apartment_complex"]}),
+   ('berkeleystandard', 'The Standard', ST_GeomFromText('POINT(-122.268992 37.866155)', 3857), 2, ${new Date()}, ${placeCatEnum["apartment_complex"]})
+   ON CONFLICT DO NOTHING
+  `;
 }
 
 async function prompt() {

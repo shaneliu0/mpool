@@ -1,4 +1,4 @@
-import React, { useContext } from 'react';
+import React, { useContext, useEffect } from 'react';
 import {
     TouchableOpacity,
     Text,
@@ -9,6 +9,7 @@ import {
 import { ThemeContext } from '../Context';
 import { ActivityIndicator } from 'react-native';
 import GLogo from '../assets/svgs/glogo.svg';
+import * as Haptics from 'expo-haptics';
 
 const isAndroid = Platform.OS === 'android';
 
@@ -120,14 +121,24 @@ interface StyledButtonProps {
 export default function StyledButton(props: StyledButtonProps) {
     const {
         variant,
+        loading
     } = props;
+
+    useEffect(() => {
+        Haptics.selectionAsync();
+    }, [loading]);
+
+    const onPressHaptic = () => {
+        Haptics.selectionAsync();
+        props.onPress && props.onPress();
+    }
 
     switch (variant) {
         case 'outlined':
-            return <OutlinedButton {...props} />;
+            return <OutlinedButton {...props} onPress={onPressHaptic} />;
         case 'filled':
         default:
-            return <FilledButton {...props} />
+            return <FilledButton {...props} onPress={onPressHaptic} />
     }
 }
 

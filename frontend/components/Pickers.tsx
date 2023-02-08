@@ -21,6 +21,7 @@ import { MaterialIcons } from "@expo/vector-icons";
 import * as Logging from '../Logging';
 import { defaultPoolPlace, PoolPlace, PoolPlaceCategory } from "../dataAccess/poolData";
 import { Toast } from "react-native-toast-message/lib/src/Toast";
+import { placeCatEnum } from "../constants/Conversion";
 
 interface PlacesSelectorProps {
     onSelect: (place: GooglePlaceData, details: GooglePlaceDetail | null) => void;
@@ -90,9 +91,11 @@ interface FlexiblePlacesSelectorProps {
     items: PoolPlaceCategory[];
     placeholder: string;
     value: PoolPlace | null;
+    enforceOnlyAirports?: boolean;
+    enforceNotAirports?: boolean;
 }
 export function FlexiblePlacesSelector(props: FlexiblePlacesSelectorProps) {
-    const { onSelect, placeholder, value, items } = props;
+    const { onSelect, placeholder, value, items, enforceOnlyAirports, enforceNotAirports } = props;
     const colorScheme = useColorScheme();
     const theme = useContext(ThemeContext);
     const [modalVisible, setModalVisible] = useState(false);
@@ -133,6 +136,8 @@ export function FlexiblePlacesSelector(props: FlexiblePlacesSelectorProps) {
     }, [modalVisible])
 
     const { name } = value || defaultPoolPlace;
+
+    const hasAirportTerminals = items.some(item => item.category_id === placeCatEnum['airport_terminal']);
 
     return (
         <>
@@ -203,47 +208,61 @@ export function FlexiblePlacesSelector(props: FlexiblePlacesSelectorProps) {
                                     return (
                                         <ScrollView>
                                             <View style={{ marginBottom: 60 }}>
-                                                {items.map((c, idx) => {
-                                                    return (
-                                                        <Menu.Group title={c.category}>
-                                                            {c.places.map((i, idx) => {
-                                                                return (
-                                                                    <Menu.ItemOption
-                                                                        key={idx}
-                                                                        value={i.id}
-                                                                        bg={i.id === value?.id ? "cyan.600" : undefined}
-                                                                        style={{ borderRadius: 15, }}
-                                                                        onPress={() => {
-                                                                            onInternalSelect(i);
-                                                                        }}
-                                                                    >
-                                                                        {i.name}
-                                                                    </Menu.ItemOption>
-                                                                )
-                                                            })}
-                                                        </Menu.Group>
-                                                    )
-                                                })}
-                                                <Menu.Group title="Other Locations">
-                                                    {(value && !items.some(i => i.places.some(p => p.id === value?.id))) ? (
+                                                {items
+                                                    .filter(i => {
+                                                        if (enforceOnlyAirports && hasAirportTerminals) {
+                                                            return i.category_id === placeCatEnum['airport_terminal'];
+                                                        }
+                                                        if (enforceNotAirports) {
+                                                            return i.category_id !== placeCatEnum['airport_terminal'];
+                                                        }
+                                                        return true;
+                                                    })
+                                                    .map((c, idx) => {
+                                                        return (
+                                                            <Menu.Group title={c.category}>
+                                                                {c.places.map((i, idx) => {
+                                                                    return (
+                                                                        <Menu.ItemOption
+                                                                            key={idx}
+                                                                            value={i.id}
+                                                                            bg={i.id === value?.id ? "cyan.600" : undefined}
+                                                                            style={{ borderRadius: 15, }}
+                                                                            onPress={() => {
+                                                                                onInternalSelect(i);
+                                                                            }}
+                                                                        >
+                                                                            {i.name}
+                                                                        </Menu.ItemOption>
+                                                                    )
+                                                                })}
+                                                            </Menu.Group>
+                                                        )
+                                                    })}
+                                                {(!(enforceOnlyAirports && hasAirportTerminals)) ? (
+                                                    <Menu.Group title="Other Locations">
+                                                        {(value && !items.some(i => i.places.some(p => p.id === value?.id))) ? (
+                                                            <Menu.ItemOption
+                                                                value={value?.id}
+                                                                bg={"cyan.600"}
+                                                                style={{ borderRadius: 15 }}
+                                                            >
+                                                                {value?.name}
+                                                            </Menu.ItemOption>
+                                                        ) : <></>}
                                                         <Menu.ItemOption
-                                                            value={value?.id}
-                                                            bg={"cyan.600"}
+                                                            value=""
                                                             style={{ borderRadius: 15 }}
+                                                            onPress={() => {
+                                                                setChoosingExternal(true);
+                                                            }}
                                                         >
-                                                            {value?.name}
+                                                            Select a different location
                                                         </Menu.ItemOption>
-                                                    ) : <></>}
-                                                    <Menu.ItemOption
-                                                        value=""
-                                                        style={{ borderRadius: 15 }}
-                                                        onPress={() => {
-                                                            setChoosingExternal(true);
-                                                        }}
-                                                    >
-                                                        Select a different location
-                                                    </Menu.ItemOption>
-                                                </Menu.Group>
+                                                    </Menu.Group>
+                                                ) : (
+                                                    null
+                                                )}
                                             </View>
                                         </ScrollView>
                                     )
@@ -275,24 +294,24 @@ export function DateTimeSelector(props: DateTimeSelectorProps) {
         <>
             <Text style={{ fontWeight: "300", marginLeft: 15 }}>This time is in your local device timezone.</Text>
             <Text style={{ fontWeight: "300", marginLeft: 15 }}></Text>
-            <Text style={{ fontWeight: "300", marginLeft: 15 }}>You will see the time in EST on the</Text>
-            <Text style={{ fontWeight: "300", marginLeft: 15 }}>home screen after you create the request.</Text>
+            <Text style={{ fontWeight: "300", marginLeft: 15 }}>You will see the time in your university's timezone</Text>
+            <Text style={{ fontWeight: "300", marginLeft: 15 }}>on the home screen after you create the request.</Text>
         </>
     )
 
-    if (new Date().getTimezoneOffset() !== 300) {
-        tipComponent = (
-            <>
-                <Text style={{ fontWeight: "300", marginLeft: 15 }}>This time is in your local device timezone.</Text>
-                <Text style={{ fontWeight: "300", marginLeft: 15 }}></Text>
-                <Text style={{ fontWeight: "300", marginLeft: 15 }}>Warning: Your device timezone is NOT</Text>
-                <Text style={{ fontWeight: "300", marginLeft: 15 }}>set to UMich's Eastern Time.</Text>
-                <Text style={{ fontWeight: "300", marginLeft: 15 }}></Text>
-                <Text style={{ fontWeight: "300", marginLeft: 15 }}>You will see the time in EST on the</Text>
-                <Text style={{ fontWeight: "300", marginLeft: 15 }}>home screen after you create the request.</Text>
-            </>
-        )
-    }
+    // if (new Date().getTimezoneOffset() !== 300) {
+    //     tipComponent = (
+    //         <>
+    //             <Text style={{ fontWeight: "300", marginLeft: 15 }}>This time is in your local device timezone.</Text>
+    //             <Text style={{ fontWeight: "300", marginLeft: 15 }}></Text>
+    //             <Text style={{ fontWeight: "300", marginLeft: 15 }}>Warning: Your device timezone is NOT</Text>
+    //             <Text style={{ fontWeight: "300", marginLeft: 15 }}>set to UMich's Eastern Time.</Text>
+    //             <Text style={{ fontWeight: "300", marginLeft: 15 }}></Text>
+    //             <Text style={{ fontWeight: "300", marginLeft: 15 }}>You will see the time in your university's timezone</Text>
+    //             <Text style={{ fontWeight: "300", marginLeft: 15 }}>on the home screen after you create the request.</Text>
+    //         </>
+    //     )
+    // }
 
     if (Platform.OS === 'ios') {
         return (

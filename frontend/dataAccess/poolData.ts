@@ -29,10 +29,14 @@ export interface PoolSeasonDetails {
     id: number;
     displayTitle: string;
     destinations: PoolPlaceCategory[];
+    defaultTime?: number;
+    enforceFromAirport?: boolean;
+    enforceToAirport?: boolean;
     infoAlert?: string;
 }
 export interface PoolPlaceCategory {
     category: string;
+    category_id: string;
     places: PoolPlace[];
 }
 export const defaultPoolSeasonDetails: PoolSeasonDetails = { id: -1, displayTitle: "", destinations: [] };
@@ -70,6 +74,8 @@ export interface PoolRequestData {
     from: PoolPlace;
     to: PoolPlace;
     destinations: PoolPlaceCategory[];
+    enforceFromAirport?: boolean;
+    enforceToAirport?: boolean;
     matchId?: number;
 }
 export const defaultPoolRequestData: PoolRequestData = {

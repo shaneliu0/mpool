@@ -52,6 +52,9 @@ export default function PoolRequestCreationScreen({ route, navigation }: RootTab
                         Alert.alert(data.infoAlert);
                     }
                     setPoolSeasonDetails(data);
+                    if (data.defaultTime) {
+                        setDate(new Date(data.defaultTime));
+                    }
                     setLoadingPoolDetails(false);
                 } catch (e) {
                     Logging.Error(e);
@@ -67,7 +70,7 @@ export default function PoolRequestCreationScreen({ route, navigation }: RootTab
 
     if (!route.params) return <Text variant='body'>Season not found!</Text>
     const { seasonId } = route.params;
-    const { displayTitle, destinations } = poolSeasonDetails;
+    const { displayTitle, destinations, enforceFromAirport, enforceToAirport } = poolSeasonDetails;
 
     const timePickerId = 0;
     const placePickerId = 1;
@@ -165,6 +168,8 @@ export default function PoolRequestCreationScreen({ route, navigation }: RootTab
                                 items={destinations}
                                 placeholder="Select your departure location"
                                 value={from}
+                                enforceOnlyAirports={enforceFromAirport}
+                                enforceNotAirports={enforceToAirport}
                             />
                             <Text variant="bodylarge">Destination</Text>
                             <FlexiblePlacesSelector
@@ -172,6 +177,8 @@ export default function PoolRequestCreationScreen({ route, navigation }: RootTab
                                 items={destinations}
                                 placeholder="Select your destination"
                                 value={to}
+                                enforceOnlyAirports={enforceToAirport}
+                                enforceNotAirports={enforceFromAirport}
                             />
                             <Text variant="bodylarge">Select your pickup location.</Text>
                             <BulletList

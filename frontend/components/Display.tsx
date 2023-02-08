@@ -17,14 +17,21 @@ export function PositionedMap(props: PositionedMapProps) {
     const { colors } = useTheme();
     const scheme = useColorScheme();
 
+    const ilat = (fromCoords.latitude + toCoords.latitude) / 2;
+    const ilng = (fromCoords.longitude + toCoords.longitude) / 2;
+    const latDelta = Math.abs(fromCoords.latitude - toCoords.latitude);
+    const lngDelta = Math.abs(fromCoords.longitude - toCoords.longitude);
+    const multiplier = 2;
+
     return (
         <MapView
+            key={JSON.stringify({ fromCoords, toCoords })}
             style={styles.map}
             initialRegion={{
-                latitude: 42.2545488,
-                longitude: -83.5171204,
-                latitudeDelta: 0.0922 * 2.5,
-                longitudeDelta: 0.0421 * 2.5
+                latitude: ilat,
+                longitude: ilng,
+                latitudeDelta: latDelta * multiplier,
+                longitudeDelta: lngDelta * multiplier
             }}
             provider={mapsProvider}
         >

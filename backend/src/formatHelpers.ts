@@ -34,9 +34,19 @@ export function roundCoordinatesTo3Decimals(coords: { latitude: number, longitud
 
 export function newLineNameIfNeeded(name: string | undefined) {
     if (!name) return "";
-    if (name.length > 10) {
-        return name.slice(0, 10) + '...';
-    }
+    // if (name.length > 10) {
+    //     return name.slice(0, 10) + '...';
+    // }
 
     return name;
+}
+
+export function secureGetEmailDomain(email: string) {
+    const parts = email.split("@");
+    const emailEnding = parts[parts.length - 1];
+    return emailEnding;
+}
+
+export function getProfileImageUrl(photoUrl: string, userId: string) {
+    return `https://avatars.dicebear.com/api/bottts/${userId}.png`;
 }

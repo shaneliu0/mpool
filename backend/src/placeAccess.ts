@@ -27,9 +27,9 @@ export async function getLatLngs(placeIds: string[]) {
     }));
 }
 
-export async function updatePlace(placeId: string) {
+export async function updatePlace(placeId: string): Promise<string> {
     const found = await prisma.place.findFirst({ where: { placeId } });
-    if (found) return;
+    if (found) return "";
 
     const place = await mapsClient.placeDetails({
         params: {
@@ -51,6 +51,8 @@ export async function updatePlace(placeId: string) {
         VALUES ('${place_id}', '${dbname}', ST_GeomFromText('POINT(${lng} ${lat})', 3857), '${updatedTime}')
         ON CONFLICT ("placeId") DO UPDATE SET "name" = '${dbname}', "coords" = ST_GeomFromText('POINT(${lng} ${lat})', 3857), "updatedAt" = '${updatedTime}'
     `);
+
+    return place_id || "";
 }
 
 export type placeCategory = "airport_terminal" | "dorm" | "apartment_complex" | "";
@@ -98,6 +100,7 @@ export async function getSeasonDestinations(seasonId: number): Promise<PoolPlace
     const placeWithCat: PoolPlaceCategory[] = sdata.university.defaultPlaces.map((p, idx) => {
         return {
             category: p.category || "",
+            category_id: p.category || "",
             places: [{
                 name: p.name,
                 id: p.placeId,
@@ -120,6 +123,7 @@ export async function getSeasonDestinations(seasonId: number): Promise<PoolPlace
     return filteredCat.map(c => {
         return {
             category: catToTitle[c],
+            category_id: c,
             places: catToPlaces[c] || [],
         }
     });

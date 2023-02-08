@@ -4,7 +4,7 @@ import moment from 'moment';
 import { logError, resError } from '../logging';
 import { batchSendPushNotifications } from '../notify';
 import { getAllPoolMembers, getMatchedPool } from './pool/pool';
-import { checkUserMiddleware } from '../permissions/userPerms';
+import { checkUserApplyUniversityMiddleware } from '../permissions/userPerms';
 import { ChatStatusResp } from '../types/dataAccess/chats';
 import { acceptMatchRequest } from '../routes/pool/pool';
 
@@ -14,7 +14,7 @@ const prisma = global.prisma;
 
 const router = express.Router();
 
-router.use(checkUserMiddleware);
+router.use(checkUserApplyUniversityMiddleware);
 
 
 const MESSAGE_PAGE_SIZE = 20;
@@ -130,7 +130,7 @@ router.get('/', async (req: any, res) => {
             }
             return {
                 id: pool.poolId,
-                name: pool.season.name,
+                name: truncateMessage(pool.season.name, 20),
                 lastMessage: truncateMessage(pool.message[0]?.content, 24) || "No messages yet.",
                 lastMessageTime: pool.message[0]?.createdAt && moment(pool.message[0]?.createdAt).calendar(),
                 avatars: photoRes,
@@ -246,7 +246,10 @@ router.post('/:poolId', async (req: any, res) => {
 
     try {
         const pid = parseInt(poolId);
-        const verifyPermission = await prisma.pool.findUnique({
+        if (isNaN(pid)) return res.sendStatus(400);
+        const allUsers = await getAllPoolMembers(pid);
+        if (!allUsers.some(u => u.userId === user.uid)) return res.sendStatus(403);
+        const verifyPermission = await prisma.pool.findUniqueOrThrow({
             where: {
                 poolId: parseInt(poolId),
             },
@@ -258,8 +261,6 @@ router.post('/:poolId', async (req: any, res) => {
                 }
             }
         });
-        if (!verifyPermission) return res.status(403).send('Unauthorized.');
-
         let infoMsg = undefined;
         // check if the user is in the pool.
         const inPool = verifyPermission.PoolRequest.some(r => r.userId === user.uid);
@@ -281,7 +282,7 @@ router.post('/:poolId', async (req: any, res) => {
                     ]
                 }
             });
-            
+
             if (match) {
                 await acceptMatchRequest(match?.potentialMatchId, user.uid);
                 infoMsg = 'You were automatically added to this pool.';

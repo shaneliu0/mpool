@@ -1,13 +1,13 @@
 import express from 'express';
 import { resError } from '../logging';
-import { checkUserMiddleware } from '../permissions/userPerms';
+import { checkUserApplyUniversityMiddleware } from '../permissions/userPerms';
 
 import { Notification, RegisterNotificationData } from '../types/dataAccess/notifications';
 
 const prisma = global.prisma;
 const router = express.Router();
 
-router.use(checkUserMiddleware);
+router.use(checkUserApplyUniversityMiddleware);
 
 router.get('/', async (req, res) => {
     const { user } = req;

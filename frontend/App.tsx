@@ -25,12 +25,14 @@ import {
   extendTheme,
   NativeBaseProvider
 } from 'native-base';
-import Colors from './constants/Colors';
+import Colors, { getThemeFromPalette } from './constants/Colors';
 import { API_BASE_URL } from './config';
 import { registerNotifications } from './dataAccess/notifications';
 import { ThemeContext } from './Context';
 import { ActionSheetProvider } from '@expo/react-native-action-sheet';
 import { AndroidPromptProvider } from './components/PromptProvider';
+import { getAuth, reauthenticateWithCredential, updateEmail } from 'firebase/auth';
+import { getUniversityData } from './dataAccess/users';
 
 // configurate axios
 axios.defaults.baseURL = API_BASE_URL;
@@ -53,6 +55,7 @@ function App() {
   const [notification, setNotification] = useState<any>(false);
   const notificationListener = useRef<any>(null);
   const responseListener = useRef<any>(null);
+  const [themeColors, setThemeColors] = useState(Colors);
 
   const isLoadingComplete = useCachedResources();
   const colorScheme = useColorScheme();
@@ -111,11 +114,21 @@ function App() {
     }
   }, [user]);
 
+  useEffect(() => {
+    if (user) {
+      (async () => {
+        const resp = await getUniversityData();
+        if (!resp.universityColors) return;
+        setThemeColors(getThemeFromPalette(resp.universityColors as any));
+      })();
+    }
+  }, [user])
+
   if (!isLoadingComplete) {
     return null;
   } else {
     return (
-      <ThemeContext.Provider value={darkMode ? Colors.dark : Colors.light}>
+      <ThemeContext.Provider value={darkMode ? themeColors.dark : themeColors.light}>
         <ActionSheetProvider>
           <NativeBaseProvider theme={theme}>
             <AndroidPromptProvider />

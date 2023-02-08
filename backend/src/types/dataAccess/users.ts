@@ -45,13 +45,32 @@ export async function saveProfile(newProfile: Profile) {
 
 export interface CheckedInResp {
     checkedIn: boolean;
+    welcomeData: WelcomeMessageData[];
+    tosUrl: string;
     errorSignOutMsg?: string;
 }
-export async function getCheckedInStatus() {
+export interface WelcomeMessageData {
+    heading: string;
+    content: string[];
+}
+export async function getCheckedIn() {
     const resp = await axios.get('/user/checkedin');
     return (resp.data as CheckedInResp);
 }
 
 export async function deleteAccount() {
     await axios.delete('/user');
+}
+
+export interface UniversityDataResp {
+    universityName?: string;
+    universityColors?: object;
+}
+export async function getUniversityData(): Promise<UniversityDataResp> {
+    const resp = await axios.get('/user/university');
+    return (resp.data as UniversityDataResp);
+}
+
+export async function acceptTos(): Promise<void> {
+    await axios.post('/user/accepttos');
 }

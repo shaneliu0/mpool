@@ -84,6 +84,8 @@ router.get('/:requestId', async (req, res) => {
             },
             destinations: dests,
             matchId: potentialMatch?.potentialMatchId,
+            enforceFromAirport: request.season.enforceFromAirport,
+            enforceToAirport: request.season.enforceToAirport,
         } as PoolRequestData)
     } catch (e) {
         return resError(res, e);
@@ -100,15 +102,21 @@ router.put('/:requestId', async (req, res) => {
         if (!(await checkCanAccessRequest(user.uid, rid))) {
             return res.sendStatus(403);
         }
-        if (fromId) await updatePlace(fromId);
-        if (toId) await updatePlace(toId);
+        let valFromId = "";
+        let valToId = "";
+        if (fromId) {
+            valFromId = await updatePlace(fromId);
+        }
+        if (toId) {
+            valToId = await updatePlace(toId);
+        }
 
         await prisma.poolRequest.update({
             where: { requestId: rid },
             data: {
                 departTime: departDate ? new Date(departDate) : undefined,
-                from: fromId ? { connect: { placeId: fromId } } : undefined,
-                to: toId ? { connect: { placeId: toId } } : undefined,
+                from: fromId ? { connect: { placeId: valFromId || fromId } } : undefined,
+                to: toId ? { connect: { placeId: valToId || toId } } : undefined,
             },
         });
 

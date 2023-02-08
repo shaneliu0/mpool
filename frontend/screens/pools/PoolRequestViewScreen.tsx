@@ -175,7 +175,9 @@ function PoolRequest(props: PoolRequestProps) {
         updatedAt,
         departTime,
         from,
-        to
+        to,
+        enforceFromAirport,
+        enforceToAirport,
     } = request;
 
     const timeEditIdx = 0;
@@ -242,6 +244,8 @@ function PoolRequest(props: PoolRequestProps) {
                                 items={request.destinations}
                                 placeholder="Select your departure location"
                                 value={newFrom}
+                                enforceOnlyAirports={enforceFromAirport}
+                                enforceNotAirports={enforceToAirport}
                             />
                             <Text variant="bodylarge">Destination</Text>
                             <FlexiblePlacesSelector
@@ -252,6 +256,8 @@ function PoolRequest(props: PoolRequestProps) {
                                 items={request.destinations}
                                 placeholder="Select your destination"
                                 value={newTo}
+                                enforceOnlyAirports={enforceToAirport}
+                                enforceNotAirports={enforceFromAirport}
                             />
                             <Text variant="bodylarge">Select your pickup location.</Text>
                             <BulletList

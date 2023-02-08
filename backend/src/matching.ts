@@ -3,7 +3,7 @@ import { PoolRequest, Prisma } from "@prisma/client";
 import { getCorrectDate } from "./formatHelpers";
 import { getLatLngs, placeCatEnum } from "./placeAccess";
 import { PoolRequestData } from "./types/dataAccess/poolData";
-import { pushAndEmailPersistent } from "./notify";
+import { pushAndEmailPersistent, batchSendPushNotifications } from "./notify";
 import ms from 'ms';
 import { logError } from "./logging";
 import { getUserBlockedMessage } from "./permissions/safetyPerms";
@@ -18,6 +18,43 @@ const refreshIntervalCallback = () => {
 console.log('refreshed and matched all');
 refreshAndPotentiallyMatchAll();
 setInterval(refreshIntervalCallback, ms('30m'));
+
+const followUpOnPendingMatches = async () => {
+    console.log('following up on pending matches:');
+
+    const pendingPotentialMatches = await prisma.potentialMatch.findMany({
+        where: {
+            declined: false,
+            derivedPoolId: null,
+            createdAt: {
+                gte: new Date(Date.now() - ms('3h')),
+            }
+        },
+        include: {
+            users: {
+                include: {
+                    NotificationTokens: true,
+                }
+            }
+        }
+    });
+    console.log(pendingPotentialMatches);
+    for (const match of pendingPotentialMatches) {
+        const matchTokens = [];
+        for (const user of match.users) {
+            for (const token of user.NotificationTokens) {
+                matchTokens.push(token.expoPushToken);
+            }
+        }
+        batchSendPushNotifications(
+            matchTokens,
+            "You still have a pending match",
+            "Accept or decline your match to continue",
+            { matchId: match.potentialMatchId }
+        );
+    }
+}
+setInterval(followUpOnPendingMatches, ms('6h'));
 
 export async function refreshAndPotentiallyMatchAll() {
     // requests still need matching if they are not either:
@@ -122,7 +159,7 @@ export async function onRequestMatchAttempt(requestId: number, curStrengthFloor:
 
 type PoolReqWithDist = PoolRequest & { dist: number };
 
-const hourOffset = 2;
+const hourOffset = 4;
 const distWeight = 0.50;
 const timeWeight = 0.50;
 
@@ -187,10 +224,10 @@ async function getPotentialUserMatches(requestId: number, limit: number = 10, of
         const fromCoords = (await getLatLngs([poolReq.from.placeId]))[0];
         const toCoords = (await getLatLngs([poolReq.to.placeId]))[0];
         let rawResp: { requestId: number, dist: number }[] = [];
-        
+
         if (fromIsAirportTerminal) {
             const asEWKT = `SRID=3857;POINT(${toCoords.longitude} ${toCoords.latitude})`;
-            
+
             rawResp = await prisma.$queryRaw`
             SELECT "requestId",
                 "Place"."coords" <-> ${asEWKT} AS dist

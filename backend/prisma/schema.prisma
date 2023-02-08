@@ -180,6 +180,7 @@ model PoolSeason {
   endsAt             DateTime
   enforceFromAirport Boolean       @default(false)
   enforceToAirport   Boolean       @default(false)
+  defaultTime        DateTime      @default(now())
   PoolRequest        PoolRequest[]
   active             Boolean
   university         University    @relation(fields: [universityId], references: [universityId])
@@ -233,9 +234,12 @@ model InterestCategory {
 }
 
 model University {
-  universityId  Int          @id
-  name          String
-  emailDomain   String
-  PoolSeason    PoolSeason[]
-  defaultPlaces Place[]
+  universityId          Int          @id
+  name                  String
+  emailDomain           String
+  colorsObject          Json         @default("{}")
+  shortTimeZoneName     String       @default("EST")
+  timeZoneOffsetFromEST Int          @default(0)
+  PoolSeason            PoolSeason[]
+  defaultPlaces         Place[]
 }

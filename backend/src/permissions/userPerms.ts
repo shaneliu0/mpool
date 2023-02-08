@@ -1,7 +1,11 @@
+import { secureGetEmailDomain } from "../formatHelpers";
+
 const allowAll = Boolean(process.env.ALLOW_ALL);
-const allowedEmailEndings = [ "umich.edu" ];
-export const checkUserAllowed = async (userId: string) => {
-    if (allowAll) return true;
+// maps university domain to university id
+type EmailMap = { [key: string]: number };
+let allowedEmailEndings: EmailMap = {};
+export const checkUserAllowed = async (userId: string): Promise<number | boolean> => {
+    if (allowAll) return 1;
     const user = await prisma.user.findFirst({
         where: {
             userId: userId,
@@ -10,18 +14,32 @@ export const checkUserAllowed = async (userId: string) => {
     });
     if (!user) return false;
     const email = user.email;
-    if (email === "user@example.com") return true;
     if (!email) return false;
-    const emailEnding = email.split("@")[1];
-    return allowedEmailEndings.includes(emailEnding);
+    const emailEnding = secureGetEmailDomain(email);
+    return allowedEmailEndings[emailEnding] || false;
 }
 
-export async function checkUserMiddleware(req: any, res: any, next: any) {
+export async function checkUserApplyUniversityMiddleware(req: any, res: any, next: any) {
     try {
         const allowed = await checkUserAllowed(req.user.uid);
-        if (allowed) return next();
+        if (allowed) {
+            req.user.universityId = allowed;
+            return next();
+        };
         return res.sendStatus(403);
     } catch (error) {
         return res.sendStatus(500);
     }
 }
+
+export const refreshUniversityCache = async () => {
+    let newEndings = await prisma.university.findMany();
+    let newEmailMap: EmailMap = {};
+    newEndings.forEach((e) => {
+        newEmailMap[e.emailDomain] = e.universityId;
+    });
+    allowedEmailEndings = { ...newEmailMap };
+    console.log("Refreshed allowed email endings: ", allowedEmailEndings);
+}
+
+refreshUniversityCache();

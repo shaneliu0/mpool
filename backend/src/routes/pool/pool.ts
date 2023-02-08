@@ -9,7 +9,7 @@ import { Pool, PoolRequest } from '@prisma/client';
 import { pushAndEmailPersistent } from '../../notify';
 import * as MPoolBot from './mPoolBot';
 import { checkCanAccessMatch, checkCanAccessPool } from '../../permissions/poolPerms';
-import { checkUserMiddleware } from '../../permissions/userPerms';
+import { checkUserApplyUniversityMiddleware } from '../../permissions/userPerms';
 
 const prisma = global.prisma;
 
@@ -28,7 +28,7 @@ const LOC_WEIGHT = 0.60;
 const TIME_WEIGHT = 0.20;
 const INTERESTS_WEIGHT = 0.20;
 
-router.use(checkUserMiddleware);
+router.use(checkUserApplyUniversityMiddleware);
 
 router.use('/season', seasonRouter);
 router.use('/request', requestRouter);

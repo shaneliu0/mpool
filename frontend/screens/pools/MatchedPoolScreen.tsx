@@ -14,6 +14,7 @@ import { PopUpModal } from "../../components/Modal";
 import LottieView from 'lottie-react-native';
 import Animated, { useAnimatedStyle, useSharedValue } from "react-native-reanimated";
 import { PoolMemberTile } from "./PoolScreen";
+import * as Haptics from 'expo-haptics';
 
 interface PotentialPoolProps {
     canSubmit: boolean;
@@ -40,6 +41,9 @@ function PotentialPool(props: PotentialPoolProps) {
         setConfirming(true);
         try {
             await acceptPotentialPool(matchId);
+            Haptics.notificationAsync(
+                Haptics.NotificationFeedbackType.Success
+            );
             if (embedMode) {
                 onFinish();
             } else {
@@ -197,7 +201,7 @@ export function MatchedPoolView(props: PoolViewProps) {
                 const resp = await getPotentialPool(matchId)
                 setPool(resp);
             } else {
-                throw new Error("Couldn't find match")
+                throw new Error("Couldn't find match");
             }
         } catch (error) {
             Logging.Error(error);

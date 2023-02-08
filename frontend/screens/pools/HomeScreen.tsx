@@ -10,7 +10,7 @@ import Button from '../../components/Button';
 import { View } from '../../components/Themed';
 import { RootTabScreenProps } from '../../types';
 
-import Animated, { useAnimatedStyle, useSharedValue, withDelay, withTiming } from 'react-native-reanimated';
+import Animated, { runOnJS, useAnimatedStyle, useSharedValue, withDelay, withTiming } from 'react-native-reanimated';
 import { useSelector } from 'react-redux';
 import { ThemeContext } from '../../Context';
 import Layout from '../../constants/Layout';
@@ -24,8 +24,12 @@ import * as Logging from '../../Logging';
 import { BulletList, Loading } from '../../components/Display';
 import { FadeInView } from '../../components/Animation';
 import { PageSheetModal } from '../../components/Modal';
-import { getCheckedInStatus } from '../../dataAccess/users';
+import { acceptTos, CheckedInResp, getCheckedIn, WelcomeMessageData } from '../../dataAccess/users';
 import { getAuth } from 'firebase/auth';
+import * as Haptics from 'expo-haptics';
+import * as WebBrowser from 'expo-web-browser';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+import StyledButton from '../../components/Button';
 
 const auth = getAuth();
 
@@ -36,46 +40,53 @@ function WelcomeModal(props: WelcomeModalProps) {
     const { name } = props;
     const theme = useContext(ThemeContext);
     const [visible, setVisible] = useState(false);
+    const [respData, setRespData] = useState<CheckedInResp | null>(null)
+    const [viewingTos, setViewingTos] = useState(false);
+    const [acceptedTos, setAcceptedTos] = useState(false);
+    const [acceptingTos, setAcceptingTos] = useState(false);
 
-    const handleClose = () => setVisible(false);
+    const handleClose = () => {
+        Haptics.notificationAsync(
+            Haptics.NotificationFeedbackType.Error
+        );
+        handleViewTos();
+    };
+
+    const acceptAndClose = async () => {
+        if (!acceptedTos) {
+            return alert("Please accept the terms of service to continue.")
+        }
+        setAcceptingTos(true);
+        try {
+            await acceptTos();
+            Haptics.notificationAsync(
+                Haptics.NotificationFeedbackType.Success
+            );
+            setVisible(false);
+        } catch (error) {
+            Logging.Error(error);
+            alert("Couldn't accept. Try restarting the app.")
+        } finally {
+            setAcceptedTos(false);
+            setAcceptingTos(false);
+        }
+    }
+
+    const handleViewTos = () => {
+        foregroundOpacity.value = withTiming(0, {}, () => {
+            runOnJS(setViewingTos)(true);
+            foregroundOpacity.value = withTiming(1);
+        });
+    }
 
     const handleSignOut = async () => {
         auth.signOut();
     }
 
-    useEffect(() => {
-        (async () => {
-            try {
-                const resp = await getCheckedInStatus();
-                if (resp.errorSignOutMsg) {
-                    Alert.alert(
-                        resp.errorSignOutMsg,
-                        'You will now be signed out.',
-                        [
-                            {
-                                text: 'Sign Out',
-                                onPress: handleSignOut
-                            },
-                        ]
-                    )
-                }
-                if (!resp.checkedIn) setVisible(true);
-            } catch (error) {
-                Logging.Error(error);
-            }
-        })();
-    }, [])
-
-    const [firstName] = name.split(' ');
-
-    return (
-        <PageSheetModal
-            open={visible}
-            onClose={handleClose}
-            title=""
-        >
-            <ScrollView style={{ height: "100%" }}>
-                <View style={{ marginBottom: 150 }}>
+    const renderWelcomeData = () => {
+        if (!respData) {
+            return (
+                <>
                     <Text variant="h1">Welcome, {firstName}!</Text>
                     <Text variant="h2">Here's how MPool works:</Text>
                     <Text variant="bodylarge">Pools</Text>
@@ -112,7 +123,144 @@ function WelcomeModal(props: WelcomeModalProps) {
                             Let's go
                         </Button>
                     </View>
+                </>
+            )
+        }
+
+        return (
+            <>
+                <Text variant="h1">Welcome, {firstName}!</Text>
+                <Text variant="h2">Here's how MPool works:</Text>
+                {respData.welcomeData.map((d, idx) => {
+                    return (
+                        <>
+                            <Text variant="bodylarge">{d.heading}</Text>
+                            <BulletList
+                                items={d.content}
+                                variant='bodylarge'
+                            />
+                        </>
+                    )
+                })}
+                <View style={styles.buttonViewStyle}>
+                    <Button
+                        style={{
+                            marginTop: 20,
+                        }}
+                        onPress={handleClose}
+                        color="primary"
+                    >
+                        Let's go
+                    </Button>
                 </View>
+            </>
+        )
+    }
+
+    const foregroundOpacity = useSharedValue(1);
+
+    const animatedForegroundStyle = useAnimatedStyle(() => {
+        return {
+            opacity: foregroundOpacity.value,
+        }
+    });
+
+    useEffect(() => {
+        (async () => {
+            try {
+                const resp = await getCheckedIn();
+                if (resp.errorSignOutMsg) {
+                    Alert.alert(
+                        resp.errorSignOutMsg,
+                        'You will now be signed out.',
+                        [
+                            {
+                                text: 'Sign Out',
+                                onPress: handleSignOut
+                            },
+                        ]
+                    )
+                }
+                setRespData(resp);
+                if (!resp.checkedIn) setVisible(true);
+            } catch (error) {
+                Logging.Error(error);
+            }
+        })();
+    }, []);
+
+    useEffect(() => {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    }, [acceptedTos]);
+
+    const blankCheck = <MaterialCommunityIcons name="checkbox-blank-outline" size={24} color="black" />;
+    const checkedCheck = <MaterialCommunityIcons name="checkbox-marked" size={24} color="black" />;
+
+    const [firstName] = name.split(' ');
+
+    return (
+        <PageSheetModal
+            open={visible}
+            onClose={handleClose}
+            title=""
+        >
+            <ScrollView style={{ height: "100%" }}>
+                <Animated.View style={[animatedForegroundStyle, { marginBottom: 150 }]}>
+                    {(() => {
+                        if (viewingTos && respData) {
+                            return (
+                                <>
+                                    <Text variant="h1">Accept the terms of service to continue:</Text>
+                                    <View style={{
+                                        width: "100%",
+                                        display: "flex",
+                                        justifyContent: "center",
+                                        alignItems: "center",
+                                        marginVertical: 35,
+                                    }}>
+                                        <Button variant="outlined" onPress={() => WebBrowser.openBrowserAsync(respData?.tosUrl)}>Open terms of service</Button>
+                                    </View>
+                                    <TouchableOpacity
+                                        style={{
+                                            width: "100%",
+                                            display: "flex",
+                                            justifyContent: "center",
+                                            alignItems: "center",
+                                            flexDirection: "row",
+                                        }}
+                                        onPress={() => setAcceptedTos(!acceptedTos)}
+                                    >
+                                        <View>
+                                            {acceptedTos ? checkedCheck : blankCheck}
+                                        </View>
+                                        <View>
+                                            <Text style={{ marginTop: 0 }}>I agree to the terms of service linked above.</Text>
+                                        </View>
+                                    </TouchableOpacity>
+                                    <View style={{
+                                        width: "100%",
+                                        display: "flex",
+                                        justifyContent: "center",
+                                        alignItems: "center",
+                                        marginVertical: 35,
+                                    }}>
+                                        <StyledButton
+                                            variant="filled"
+                                            color="primary"
+                                            disabled={!acceptedTos}
+                                            loading={acceptingTos}
+                                            onPress={acceptAndClose}
+                                        >
+                                            Accept
+                                        </StyledButton>
+                                    </View>
+                                </>
+                            )
+                        }
+
+                        return renderWelcomeData();
+                    })()}
+                </Animated.View>
             </ScrollView>
         </PageSheetModal>
     )
@@ -142,6 +290,10 @@ function HomeFeed(props: PoolSearchProps) {
             if (setPullDownToRefresh) setPullDownRefreshing(false);
         }
     });
+
+    useEffect(() => {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }, [expandedPoolIdx])
 
     useEffect(() => {
         if (loadingPoolSeasons) {

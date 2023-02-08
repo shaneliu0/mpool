@@ -33,3 +33,10 @@ export function getIconFromPoolMemberStatus(status: PoolMemberStatus | undefined
             return <AntDesign name="arrowright" size={24} color="black" style={{ marginRight: 15, }} />;
     }
 }
+
+export const placeCatEnum = {
+    airport_terminal: "airport_terminal",
+    dorm: "dorm",
+    apartment_complex: "apartment_complex",
+    "": "",
+};
