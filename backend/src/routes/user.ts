@@ -205,11 +205,6 @@ router.get('/checkedin', async (req, res) => {
         });
         // if found, then the user has checked in already.
         if (!checkedIn) {
-            await prisma.checkedIn.upsert({
-                where: { userId: user.uid },
-                create: { userId: user.uid },
-                update: { userId: user.uid },
-            });
             return res.json({
                 checkedIn: false,
                 tosUrl: TOS_URL,
