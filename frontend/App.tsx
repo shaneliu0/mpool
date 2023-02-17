@@ -8,7 +8,6 @@ import React, { useEffect, useRef, useState } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { Linking, LogBox, Platform } from 'react-native';
 import * as RootNavigation from './navigation/RootNavigation';
-import { CommonActions } from '@react-navigation/native';
 
 import axios from 'axios';
 
@@ -31,7 +30,6 @@ import { registerNotifications } from './dataAccess/notifications';
 import { ThemeContext } from './Context';
 import { ActionSheetProvider } from '@expo/react-native-action-sheet';
 import { AndroidPromptProvider } from './components/PromptProvider';
-import { getAuth, reauthenticateWithCredential, updateEmail } from 'firebase/auth';
 import { getUniversityData } from './dataAccess/users';
 
 // configurate axios
@@ -171,7 +169,7 @@ function handleNotificationData(data: any) {
       })
     }, NAV_TIMEOUT);
   }
-} // TFFFFTFFTT
+}
 
 // async function schedulePushNotification() {
 //   await Notifications.scheduleNotificationAsync({

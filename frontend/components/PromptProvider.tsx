@@ -2,7 +2,6 @@ import { BackHandler, Platform, StyleSheet, View } from "react-native";
 import prompt, { PromptOptions } from "react-native-prompt-android";
 import Dialog from 'react-native-dialog';
 import React, { useEffect, useState } from "react";
-import { useBackHandler } from '@react-native-community/hooks'
 
 
 let androidPromptRef: (title: string, message: string, buttons: Array<PromptButton>, options: PromptOptions) => void;
