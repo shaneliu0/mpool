@@ -190,7 +190,7 @@ export default function Chats({ route, navigation }: RootTabScreenProps<'Chat'>)
     }
   }
 
-  const handleLoadEarlier = async () => {
+  const  handleLoadEarlier = async () => {
     setLoadingEarlier(true);
     try {
       // retrieve more messages, with an offset equal to messages.length

@@ -2,7 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import bp from 'body-parser';
 import admin from 'firebase-admin';
-// import sgMail from '@sendgrid/mail';
+import sgMail from '@sendgrid/mail';
 import { PrismaClient } from '@prisma/client';
 
 admin.initializeApp({
@@ -10,7 +10,7 @@ admin.initializeApp({
     databaseURL: "https://your-firebase-project-default-rtdb.firebaseio.com"
 });
 
-// sgMail.setApiKey(process.env.SENDGRID_API_KEY || "");
+sgMail.setApiKey(process.env.SENDGRID_API_KEY || "");
 
 declare global {
     var prisma: PrismaClient;
@@ -18,6 +18,7 @@ declare global {
 const prisma = new PrismaClient();
 global.prisma = prisma;
 
+import feedRouter from './routes/feed';
 import poolRouter from './routes/pool/pool';
 import chatRouter from './routes/chat';
 import userRouter from './routes/user';
@@ -57,6 +58,7 @@ app.use(decodeUserToken);
 app.use(cors());
 app.use(bp.json());
 
+app.use('/feed', feedRouter);
 app.use('/pool', poolRouter);
 app.use('/chat', chatRouter);
 app.use('/user', userRouter);
@@ -64,7 +66,6 @@ app.use('/notifications', notificationsRouter);
 app.use('/static', staticRouter);
 app.use('/safety', safetyRouter);
 app.use('/functions', functionsRouter);
-
 
 const port = process.env.PORT || 3001;
 app.listen(port, () => {

@@ -67,6 +67,7 @@ export interface PoolRequestData {
     seasonName: string;
     seasonId: number;
     statusMessage: string;
+    description?: string;
     poolId?: number;
     createdAt: number;
     updatedAt: number;
@@ -100,6 +101,7 @@ export interface SubmitPoolRequestData {
     departDate: number;
     fromId: string;
     toId: string;
+    description?: string;
 }
 export interface SubmitPoolRequestResp {
     requestId: number;
@@ -217,3 +219,26 @@ export const getPoolStatus = async (poolId: number): Promise<GetPoolStatusResp> 
 export const cancelPoolRequest = async (requestId: number): Promise<void> => {
     await axios.delete(`/pool/request/${requestId}`);
 }
+
+// web stuff
+export interface HomeOtherRequest extends PoolRequestData {
+    posterName: string;
+    posterId: string;
+}
+export interface HomeFeedData {
+    ownRequests: PoolRequestData[];
+    otherRequests: HomeOtherRequest[];
+    sortedByRequestId: number;
+}
+export const getHome = async () => {
+    const response = await axios.get<HomeFeedData>('/feed');
+    return response.data;
+}
+
+export interface ReplyToRequest {
+    message: string;
+}
+export const replyToRequest = async (requestId: number, data: ReplyToRequest): Promise<void> => {
+    await axios.post(`/feed/request/${requestId}`, data);
+}
+

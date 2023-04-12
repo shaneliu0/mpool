@@ -123,20 +123,20 @@ router.get('/:seasonId', async (req, res) => {
 router.post('/:seasonId', async (req, res) => {
     const { user } = req;
     const { seasonId } = req.params;
-    const { departDate, fromId, toId } = req.body;
-
+    const { departDate, fromId, toId, description } = req.body;
+    
     try {
         const sid = parseInt(seasonId);
         if (isNaN(sid)) return res.status(403).json({ error: "Bad season id formatting" });
         const checkSeasonExists = await prisma.poolSeason.findFirst({ where: { id: sid, active: true } });
-        if (!checkSeasonExists) return res.status(403).json({ error: "Season does not exists or is not active."});
+        if (!checkSeasonExists && sid) return res.status(403).json({ error: "Season does not exists or is not active."});
         const checkDup = await prisma.poolRequest.findFirst({
             where: {
                 userId: user.uid,
                 seasonId: sid,
             }
         });
-        if (checkDup) return res.status(403).json({ error: "Duplicate request!" });
+        if (checkDup && sid) return res.status(403).json({ error: "Duplicate request!" });
 
         const valFrom = await updatePlace(fromId);
         const valTo = await updatePlace(toId);
@@ -148,6 +148,7 @@ router.post('/:seasonId', async (req, res) => {
                 user: { connect: { userId: user.uid }},
                 from: { connect: { placeId: valFrom || fromId }},
                 to: { connect: { placeId: valTo || toId }},
+                description: description,
             }
         });
         await onRequestMatchAttempt(newRequest.requestId);

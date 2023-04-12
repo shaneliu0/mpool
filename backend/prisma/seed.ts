@@ -24,7 +24,7 @@ async function universities() {
             }
         });
     } catch (error) {
-        
+
     }
     try {
         await prisma.university.create({
@@ -47,41 +47,41 @@ async function seasons() {
     await prisma.poolSeason.createMany({
         data: [
             {
-                id: 1,
-                name: "Spring Break to DTW",
+                id: 5,
+                name: "Summer to DTW",
                 active: true,
                 enforceToAirport: true,
-                defaultTime: new Date(2023, 2, 25),
-                endsAt: new Date(2023, 3, 13),
+                defaultTime: new Date(2023, 4, 25),
+                endsAt: new Date(2023, 5, 31),
                 universityId: 1,
             },
-            {
-                id: 2,
-                name: "Spring Break to Ann Arbor",
-                enforceFromAirport: true,
-                active: true,
-                defaultTime: new Date(2023, 3, 6),
-                endsAt: new Date(2023, 3, 14),
-                universityId: 1,
-            },
-            {
-                id: 3,
-                name: "Spring Break from Berkeley",
-                enforceToAirport: true,
-                active: true,
-                defaultTime: new Date(2023, 3, 25),
-                endsAt: new Date(2023, 4, 14),
-                universityId: 2,
-            },
-            {
-                id: 4,
-                name: "Spring Break to Berkeley",
-                enforceFromAirport: true,
-                active: true,
-                defaultTime: new Date(2023, 4, 1),
-                endsAt: new Date(2023, 4, 14),
-                universityId: 2,
-            },
+            // {
+            //     id: 6,
+            //     name: "Spring Break to Ann Arbor",
+            //     enforceFromAirport: true,
+            //     active: true,
+            //     defaultTime: new Date(2023, 3, 6),
+            //     endsAt: new Date(2023, 3, 14),
+            //     universityId: 1,
+            // },
+            // {
+            //     id: 3,
+            //     name: "Spring Break from Berkeley",
+            //     enforceToAirport: true,
+            //     active: true,
+            //     defaultTime: new Date(2023, 3, 25),
+            //     endsAt: new Date(2023, 4, 14),
+            //     universityId: 2,
+            // },
+            // {
+            //     id: 4,
+            //     name: "Spring Break to Berkeley",
+            //     enforceFromAirport: true,
+            //     active: true,
+            //     defaultTime: new Date(2023, 4, 1),
+            //     endsAt: new Date(2023, 4, 14),
+            //     universityId: 2,
+            // },
         ]
     })
 }
@@ -125,8 +125,8 @@ async function places() {
     ON CONFLICT DO NOTHING
    `;
 
-   // START BERKELEY
-   await prisma.$executeRaw`
+    // START BERKELEY
+    await prisma.$executeRaw`
    INSERT INTO "Place" ("placeId", "name", "coords", "universityId", "updatedAt", "category") VALUES
    ('oakterminal1', 'OAK Terminal 1', ST_GeomFromText('POINT(-122.212382 37.711587)', 3857), 2, ${new Date()}, ${placeCatEnum["airport_terminal"]}),
    ('oakterminal2', 'OAK Terminal 2', ST_GeomFromText('POINT(-122.211611 37.711509)', 3857), 2, ${new Date()}, ${placeCatEnum["airport_terminal"]}),
@@ -207,6 +207,19 @@ async function MPoolChatUser() {
     })
 }
 
+async function defaultSeason() {
+    await prisma.poolSeason.create({
+        data: {
+            id: 0,
+            name: "season",
+            active: false,
+            defaultTime: new Date(2023, 4, 31),
+            endsAt: new Date(2023, 7, 31),
+            universityId: 1,
+        },
+    })
+}
+
 async function main() {
     // await universities();
     // await places();
@@ -215,6 +228,7 @@ async function main() {
     // await prompt();
     // await MPoolChatUser();
 
+    // await defaultSeason();
     // await sampleMatch();
 }
 
