@@ -33,7 +33,7 @@ router.get('/', async (req, res) => {
         const otherRequests = await prisma.poolRequest.findMany({
             where: {
                 userId: { not: user.uid, },
-                // departTime: { gte: new Date() },
+                departTime: { gte: new Date() },
             },
             include: {
                 season: true,
