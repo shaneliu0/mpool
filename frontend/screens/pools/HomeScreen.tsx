@@ -218,7 +218,7 @@ function WelcomeModal(props: WelcomeModalProps) {
                                         alignItems: "center",
                                         marginVertical: 35,
                                     }}>
-                                        <Button variant="outlined" onPress={() => WebBrowser.openBrowserAsync(respData?.tosUrl)}>Open terms of service</Button>
+                                        <Button variant="outlined" color="primary" onPress={() => WebBrowser.openBrowserAsync(respData?.tosUrl)}>Open terms of service</Button>
                                     </View>
                                     <TouchableOpacity
                                         style={{

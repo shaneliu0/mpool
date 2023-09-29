@@ -56,7 +56,7 @@ const followUpOnPendingMatches = async () => {
 }
 setInterval(followUpOnPendingMatches, ms('6h'));
 
-export async function refreshAndPotentiallyMatchAll() {
+async function refreshAndPotentiallyMatchAll() {
     // requests still need matching if they are not either:
     // 1. already have a pool
     // 2. have a potential match
@@ -92,7 +92,7 @@ export async function refreshAndPotentiallyMatchAll() {
         });
         unfulfilledRequests.push(...moreReqs);
     }
-    console.log(unfulfilledRequests);
+
     for (const req of unfulfilledRequests) {
         let strengthFloor = 0.5;
         const daysFromDepart = (req.departTime.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24);
@@ -159,11 +159,11 @@ export async function onRequestMatchAttempt(requestId: number, curStrengthFloor:
 
 type PoolReqWithDist = PoolRequest & { dist: number };
 
-const hourOffset = 4;
+const hourOffset = 8;
 const distWeight = 0.50;
 const timeWeight = 0.50;
 
-export function getOrderedMatchesByStrength(curReq: PoolRequest, matchedReqs: PoolReqWithDist[]) {
+function getOrderedMatchesByStrength(curReq: PoolRequest, matchedReqs: PoolReqWithDist[]) {
     const strengths = getMatchStrengths(curReq, matchedReqs);
     const sorted = matchedReqs.map((r, i) => ({ ...r, strength: strengths[i] })).sort((a, b) => b.strength - a.strength);
     return sorted;
@@ -210,6 +210,7 @@ async function getPotentialUserMatches(requestId: number, limit: number = 10, of
         const airportTerminalCat = placeCatEnum.airport_terminal;
 
         const fromIsAirportTerminal = poolReq.from.category === airportTerminalCat;
+        const toIsAirportTerminal = poolReq.to.category === airportTerminalCat;
 
 
         // has to be the utc time zone offset ahead! 5 hours ahead for eastern time.
@@ -222,15 +223,16 @@ async function getPotentialUserMatches(requestId: number, limit: number = 10, of
         const rightLim = new Date(correctDate);
         rightLim.setHours(rightLim.getHours() + hourOffset);
         const fromCoords = (await getLatLngs([poolReq.from.placeId]))[0];
+        const fromAsEWKT = `SRID=3857;POINT(${fromCoords.longitude} ${fromCoords.latitude})`;
         const toCoords = (await getLatLngs([poolReq.to.placeId]))[0];
+        const toAsEWKT = `SRID=3857;POINT(${toCoords.longitude} ${toCoords.latitude})`;
         let rawResp: { requestId: number, dist: number }[] = [];
 
         if (fromIsAirportTerminal) {
-            const asEWKT = `SRID=3857;POINT(${toCoords.longitude} ${toCoords.latitude})`;
 
             rawResp = await prisma.$queryRaw`
             SELECT "requestId",
-                "Place"."coords" <-> ${asEWKT} AS dist
+                "Place"."coords" <-> ${toAsEWKT} AS dist
             FROM "PoolRequest"
             INNER JOIN "Place" ON "PoolRequest"."toId" = "Place"."placeId"
             AND "fromId" = ${poolReq.from.placeId}
@@ -241,11 +243,10 @@ async function getPotentialUserMatches(requestId: number, limit: number = 10, of
             LIMIT ${limit}
             OFFSET ${offset}
         `;
-        } else {
-            const asEWKT = `SRID=3857;POINT(${fromCoords.longitude} ${fromCoords.latitude})`;
+        } else if (toIsAirportTerminal) {
             rawResp = await prisma.$queryRaw`
             SELECT "requestId",
-                "Place"."coords" <-> ${asEWKT} AS dist
+                "Place"."coords" <-> ${fromAsEWKT} AS dist
             FROM "PoolRequest"
             INNER JOIN "Place" ON "PoolRequest"."fromId" = "Place"."placeId"
             AND "toId" = ${poolReq.to.placeId}
@@ -256,6 +257,20 @@ async function getPotentialUserMatches(requestId: number, limit: number = 10, of
             LIMIT ${limit}
             OFFSET ${offset}
         `;
+        } else {
+            rawResp = await prisma.$queryRaw`
+            select
+            pr."requestId",
+            ST_Distance(fromp.coords, ${fromAsEWKT}) +
+            ST_Distance(top.coords ,${toAsEWKT}) as dist
+            from "PoolRequest" pr
+            inner join "Place" fromp ON fromp."placeId" = pr."fromId"
+            inner join "Place" top ON top."placeId" = pr."toId"
+            AND pr."departTime" BETWEEN ${leftLim} AND ${rightLim}
+            AND "requestId" != ${requestId}
+            AND "seasonId" = ${poolReq.seasonId}
+            order by dist asc
+            `;
         }
 
         // remove the requests that don't work, such as users blocked themselves,
@@ -270,6 +285,33 @@ async function getPotentialUserMatches(requestId: number, limit: number = 10, of
             if (!preq) return null;
             const bresp = await getUserBlockedMessage(poolReq.userId, preq.userId);
             if (bresp) return null;
+
+            const prevMatch = await prisma.potentialMatch.findFirst({
+                where: {
+                    seasonId: poolReq.seasonId,
+                    declined: true,
+                    AND: [
+                        {
+                            users: {
+                                some: {
+                                    userId: poolReq.userId,
+                                },
+                            }
+                        },
+                        {
+                            users: {
+                                some: {
+                                    userId: preq.userId,
+                                },
+                            }
+                        },
+                    ],
+                }
+            });
+            if (prevMatch) {
+                console.log(`Ignored match because a previous match between the same users was declined. PotentialMatch ID: ${prevMatch.potentialMatchId}`)
+                return null;
+            };
 
             return { ...preq, dist: r.dist };
         }));

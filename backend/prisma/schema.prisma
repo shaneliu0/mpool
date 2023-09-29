@@ -117,9 +117,6 @@ model PotentialMatch {
   createdAt        DateTime @default(now())
 }
 
-// MAKE SURE that if you have already matched with someone, the system doesn't match you again.
-// model DeclinedMatch 
-
 model Message {
   messageId Int       @id @default(autoincrement())
   sender    User      @relation(fields: [senderId], references: [userId])
