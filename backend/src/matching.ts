@@ -1,10 +1,9 @@
 
-import { PoolRequest, Prisma } from "@prisma/client";
-import { getCorrectDate } from "./formatHelpers";
-import { getLatLngs, placeCatEnum } from "./placeAccess";
-import { PoolRequestData } from "./types/dataAccess/poolData";
-import { pushAndEmailPersistent, batchSendPushNotifications } from "./notify";
+import { PoolRequest } from "@prisma/client";
 import ms from 'ms';
+
+import { getLatLngs, placeCatEnum } from "./placeAccess";
+import { pushAndEmailPersistent, batchSendPushNotifications } from "./notify";
 import { logError } from "./logging";
 import { getUserBlockedMessage } from "./permissions/safetyPerms";
 
@@ -17,7 +16,7 @@ const refreshIntervalCallback = () => {
 }
 console.log('refreshed and matched all');
 refreshAndPotentiallyMatchAll();
-setInterval(refreshIntervalCallback, ms('30m'));
+setInterval(refreshIntervalCallback, ms('5m'));
 
 const followUpOnPendingMatches = async () => {
     console.log('following up on pending matches:');
@@ -159,9 +158,10 @@ export async function onRequestMatchAttempt(requestId: number, curStrengthFloor:
 
 type PoolReqWithDist = PoolRequest & { dist: number };
 
+const distWeight = 0.25;
+const timeWeight = 0.75;
 const hourOffset = 8;
-const distWeight = 0.50;
-const timeWeight = 0.50;
+
 
 function getOrderedMatchesByStrength(curReq: PoolRequest, matchedReqs: PoolReqWithDist[]) {
     const strengths = getMatchStrengths(curReq, matchedReqs);
@@ -229,7 +229,6 @@ async function getPotentialUserMatches(requestId: number, limit: number = 10, of
         let rawResp: { requestId: number, dist: number }[] = [];
 
         if (fromIsAirportTerminal) {
-
             rawResp = await prisma.$queryRaw`
             SELECT "requestId",
                 "Place"."coords" <-> ${toAsEWKT} AS dist

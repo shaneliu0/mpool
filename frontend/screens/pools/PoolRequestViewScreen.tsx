@@ -1,17 +1,18 @@
 import React, { useEffect, useState } from 'react';
 import { View, StyleSheet, ScrollView, Alert } from 'react-native';
+import { AntDesign, MaterialIcons } from '@expo/vector-icons';
+import Toast from 'react-native-toast-message';
+import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
+import debounce from 'lodash/debounce';
+
 import Text from '../../components/StyledText';
-import { cancelPoolRequest, defaultPoolRequestData, getPoolRequest, PoolPlace, PoolRequestData, updatePoolRequest, UpdatePoolRequestData, validateUpdatePoolRequest } from '../../dataAccess/poolData';
+import { cancelPoolRequest, defaultPoolRequestData, getPoolRequest, PoolPlace, PoolRequestData, rematchPoolRequest, updatePoolRequest, UpdatePoolRequestData, validateUpdatePoolRequest } from '../../dataAccess/poolData';
 import { RootTabScreenProps } from '../../types';
 import * as Logging from '../../Logging';
 import { BulletList, DoubleText, ExpandableBox, Loading, PositionedMap } from '../../components/Display';
 import { FadeInView } from '../../components/Animation';
-import { AntDesign, MaterialIcons } from '@expo/vector-icons';
 import * as Conversion from '../../constants/Conversion';
-import { GooglePlaceData, GooglePlaceDetail } from 'react-native-google-places-autocomplete';
-import { DateTimeSelector, FlexiblePlacesSelector, PlaceInputModal, SingleSelect } from '../../components/Pickers';
-import Toast from 'react-native-toast-message';
-import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
+import { DateTimeSelector, FlexiblePlacesSelector } from '../../components/Pickers';
 import StyledButton from '../../components/Button';
 import prompt from '../../components/PromptProvider';
 
@@ -39,53 +40,7 @@ function PoolRequest(props: PoolRequestProps) {
     const [hasEditedTo, setHasEditedTo] = useState(false);
     const [dtsKey, setDtsKey] = useState(0);
     const viewPadding = useSharedValue(0);
-
-    const handleCancelRequest = async () => {
-        Alert.alert(
-            'Cancel Request',
-            'Are you sure? This can\'t be undone.',
-            [
-                {
-                    text: 'Keep',
-                    style: 'cancel',
-                },
-                {
-                    text: 'Cancel',
-                    style: 'destructive',
-                    onPress: async () => {
-                        setCancelling(true);
-                        try {
-                            await cancelPoolRequest(requestId);
-                            navigation.navigate('Pool', {
-                                screen: "Home"
-                            } as never)
-                        } catch (error) {
-                            Logging.Error(error);
-                        } finally {
-                            setCancelling(false);
-                        }
-                    }
-                }
-            ]
-        )
-    }
-
-    const onDateChange = (_: any, selectedDate: any) => {
-        const currentDate = selectedDate || newDate;
-        setNewDate(currentDate);
-        setHasEditedDate(true);
-    };
-
-    const handleExpandEdit = (eidx: number) => () => {
-        if (eidx == editingIdx) return setEditingIdx(-1);
-        setEditingIdx(eidx);
-    };
-
-    const animatedViewStyle = useAnimatedStyle(() => {
-        return {
-            paddingBottom: viewPadding.value,
-        }
-    })
+    const debouncedRematch = debounce(() => rematchPoolRequest(irid), 3000);
 
     useEffect(() => {
         viewPadding.value = withTiming(editingIdx === 1 ? 150 : 0);
@@ -160,10 +115,59 @@ function PoolRequest(props: PoolRequestProps) {
                 setHasEditedDate(false);
                 setHasEditedFrom(false);
                 setHasEditedTo(false);
+                debouncedRematch();
             }
         })();
 
-    }, [hasEditedDate, hasEditedFrom, hasEditedTo])
+    }, [hasEditedDate, hasEditedFrom, hasEditedTo]);
+
+    const handleCancelRequest = async () => {
+        Alert.alert(
+            'Cancel Request',
+            'Are you sure? This can\'t be undone.',
+            [
+                {
+                    text: 'Keep',
+                    style: 'cancel',
+                },
+                {
+                    text: 'Cancel',
+                    style: 'destructive',
+                    onPress: async () => {
+                        setCancelling(true);
+                        try {
+                            await cancelPoolRequest(requestId);
+                            navigation.navigate('Pool', {
+                                screen: "Home"
+                            } as never)
+                        } catch (error) {
+                            Logging.Error(error);
+                        } finally {
+                            setCancelling(false);
+                        }
+                    }
+                }
+            ]
+        )
+    }
+
+    const onDateChange = (_: any, selectedDate: any) => {
+        const currentDate = selectedDate || newDate;
+        setNewDate(currentDate);
+        setHasEditedDate(true);
+    };
+
+    const handleExpandEdit = (eidx: number) => () => {
+        if (eidx == editingIdx) return setEditingIdx(-1);
+        setEditingIdx(eidx);
+    };
+
+    const animatedViewStyle = useAnimatedStyle(() => {
+        return {
+            paddingBottom: viewPadding.value,
+        }
+    })
+
 
     if (loadingRequest) return <Loading shouldCenter defaultDelay />;
     const {

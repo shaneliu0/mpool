@@ -5,6 +5,7 @@ import { resError } from "../../logging";
 import { checkCanAccessRequest } from "../../permissions/poolPerms";
 import { getSeasonDestinations, getLatLngs, updatePlace, placeCatEnum } from "../../placeAccess";
 import { PoolRequestData, UpdatePoolRequestData, ValidateUpdatePoolRequestResp } from "../../types/dataAccess/poolData";
+import { onRequestMatchAttempt } from "../../matching";
 
 const router = express.Router();
 
@@ -227,6 +228,22 @@ router.post('/:requestId/validate', async (req, res) => {
             } as ValidateUpdatePoolRequestResp);
         }
         return res.json({} as ValidateUpdatePoolRequestResp);
+    } catch (error) {
+        resError(res, error);
+    }
+});
+
+router.post('/:requestId/rematch', async (req, res) => {
+    const { requestId } = req.params;
+
+    try {
+        const rid = parseInt(requestId);
+        if (!(await checkCanAccessRequest(req.user.uid, rid))) {
+            return res.sendStatus(403);
+        }
+        if (isNaN(rid)) return res.status(403).json({ error: "Bad request id formatting" });
+        await onRequestMatchAttempt(rid);
+        return res.sendStatus(200);
     } catch (error) {
         resError(res, error);
     }

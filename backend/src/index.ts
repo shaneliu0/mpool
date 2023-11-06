@@ -12,7 +12,7 @@ admin.initializeApp({
 
 sgMail.setApiKey(process.env.SENDGRID_API_KEY || "");
 
-declare global {
+declare global { 
     var prisma: PrismaClient;
 }
 const prisma = new PrismaClient();

@@ -220,7 +220,7 @@ export function FlexiblePlacesSelector(props: FlexiblePlacesSelectorProps) {
                                                     })
                                                     .map((c, idx) => {
                                                         return (
-                                                            <Menu.Group title={c.category}>
+                                                            <Menu.Group title={c.category} key={c.category_id}>
                                                                 {c.places.map((i, idx) => {
                                                                     return (
                                                                         <Menu.ItemOption

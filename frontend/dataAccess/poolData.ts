@@ -242,3 +242,6 @@ export const replyToRequest = async (requestId: number, data: ReplyToRequest): P
     await axios.post(`/feed/request/${requestId}`, data);
 }
 
+export const rematchPoolRequest = async (requestId: number): Promise<void> => {
+    await axios.post(`/pool/request/${requestId}/rematch`);    
+}
