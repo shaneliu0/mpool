@@ -1,15 +1,10 @@
-import React, { useContext, useEffect } from 'react';
-import {
-    TouchableOpacity,
-    Text,
-    StyleProp,
-    Platform,
-    ViewStyle
-} from 'react-native';
-import { ThemeContext } from '../Context';
-import { ActivityIndicator } from 'react-native';
-import GLogo from '../assets/svgs/glogo.svg';
 import * as Haptics from 'expo-haptics';
+import React, { useContext, useEffect } from 'react';
+import { Platform, StyleProp, Text, TouchableOpacity, ViewStyle } from 'react-native';
+import { ActivityIndicator } from 'react-native';
+
+import GLogo from '../assets/svgs/glogo.svg';
+import { ThemeContext } from '../Context';
 
 const isAndroid = Platform.OS === 'android';
 
