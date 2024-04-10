@@ -1,7 +1,6 @@
 import React, { useEffect } from 'react';
-import { StyleProp, View, ViewStyle } from 'react-native';
+import { ViewStyle } from 'react-native';
 import Animated, { AnimateStyle, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
-import * as Haptics from 'expo-haptics';
 
 interface FadeInViewProps {
     show?: boolean;
