@@ -1,5 +1,3 @@
-
-
 export const GOOGLE_PLACES_API_KEY = "YOUR_GOOGLE_API_KEY";
 let preBaseUrl = "https://your-backend.example.com";
 
