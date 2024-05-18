@@ -19,7 +19,6 @@ import useCachedResources from './hooks/useCachedResources';
 import useColorScheme from './hooks/useColorScheme';
 import Navigation from './navigation';
 
-// Native Base
 import {
   extendTheme,
   NativeBaseProvider
