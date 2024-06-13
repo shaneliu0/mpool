@@ -1,12 +1,12 @@
 import 'react-native-gesture-handler';
 import './firebaseinit';
 
+import axios from 'axios';
 import { StatusBar } from 'expo-status-bar';
 import * as Device from 'expo-device';
 import * as Notifications from 'expo-notifications';
 import React, { useEffect, useRef, useState } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import axios from 'axios';
 import { LogBox, Platform } from 'react-native';
 import * as RootNavigation from './navigation/RootNavigation';
 
