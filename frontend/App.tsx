@@ -6,10 +6,10 @@ import * as Device from 'expo-device';
 import * as Notifications from 'expo-notifications';
 import React, { useEffect, useRef, useState } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { Linking, LogBox, Platform } from 'react-native';
+import axios from 'axios';
+import { LogBox, Platform } from 'react-native';
 import * as RootNavigation from './navigation/RootNavigation';
 
-import axios from 'axios';
 
 import { Provider as ReduxProvider, useSelector } from 'react-redux';
 import store from './store';
