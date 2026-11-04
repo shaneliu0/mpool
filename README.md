@@ -113,3 +113,7 @@ frontend/
 
 - [Shane Liu](https://github.com/shaneliu0)
 - [Kesava](https://github.com/KesavaViswanadha)
+
+## License
+
+MPool is available under the [MIT License](LICENSE).
