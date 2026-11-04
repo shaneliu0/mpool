@@ -76,3 +76,9 @@ typings/
 
 # FuseBox cache
 .fusebox/
+
+# macOS
+.DS_Store
+
+# Play Console service account key
+play-service-account.json
